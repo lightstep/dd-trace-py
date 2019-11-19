@@ -315,10 +315,10 @@ jobs:
     resource_class: *resource_class
     steps:
       - checkout
-      - *restore_cache_step
+      # - *restore_cache_step
       - run: scripts/run-tox-scenario '^django_'
       - *persist_to_workspace_step
-      - *save_cache_step
+      # - *save_cache_step
 
   flask:
     docker:
