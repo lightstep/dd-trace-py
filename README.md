@@ -9,8 +9,7 @@ If your app is written in Python, you can auto-instrument using our agent, witho
 
 ## Requirements
 
-- Python
-- LightStep satellite
+- Python: 2.7, 3.4, 3.5, 3.6, 3.7
 
 ## Installing
 
@@ -34,16 +33,20 @@ if __name__ == "__main__":
     get_url("https://en.wikipedia.org/wiki/Duck")
 ```
 
-Now run the application using `lightstep-ddtrace-run`:
+Now let's run the application using `lightstep-ddtrace-run`
 
 ```bash
-# export 
+# export configuration options
 export DD_TRACE_AGENT_URL=https://collector.lightstep.com:443
+# replace <service_name> with your service's name
+# replace <access_token> with your LightStep API token
 export DD_TRACE_GLOBAL_TAGS="lightstep.service_name:<service_name>,lightstep.access_token:<access_token>"
 
 # run the application
 lighstep-ddtrace-run ./app.py
 ```
+
+A trace from the application should be available in your [LightStep dashboard](https://app.lightstep.com/)
 
 ## Next Steps
 
