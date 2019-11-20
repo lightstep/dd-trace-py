@@ -1,11 +1,21 @@
 import copy
 import os
+import re
 import sys
 
 from distutils.command.build_ext import build_ext
 from distutils.errors import CCompilerError, DistutilsExecError, DistutilsPlatformError
 from setuptools import setup, find_packages, Extension
 from setuptools.command.test import test as TestCommand
+
+
+def get_version(package):
+    """
+    Return package version as listed in `__version__` in `__init__.py`.
+    This method prevents to import packages at setup-time.
+    """
+    init_py = open(os.path.join(package, '__init__.py')).read()
+    return re.search("__version__ = ['\"]([^'\"]+)['\"]", init_py).group(1)
 
 
 class Tox(TestCommand):
@@ -32,10 +42,12 @@ class Tox(TestCommand):
         sys.exit(errno)
 
 
+version = get_version('ddtrace')
+
 long_description = """
 # dd-trace-py
 
-`ddtrace` is Datadog's tracing library for Python.  It is used to trace requests
+`lighstep-ddtrace` is Datadog's tracing library for Python.  It is used to trace requests
 as they flow across web servers, databases and microservices so that developers
 have great visiblity into bottlenecks and troublesome requests.
 
@@ -57,9 +69,10 @@ documentation][visualization docs].
 
 # Base `setup()` kwargs without any C-extension registering
 setup_kwargs = dict(
-    name='ddtrace',
+    name='lightstep-ddtrace',
+    version=version,
     description='Datadog tracing code',
-    url='https://github.com/DataDog/dd-trace-py',
+    url='https://github.com/lightstep/dd-trace-py',
     author='Datadog, Inc.',
     author_email='dev@datadoghq.com',
     long_description=long_description,
@@ -79,7 +92,7 @@ setup_kwargs = dict(
     cmdclass={'test': Tox},
     entry_points={
         'console_scripts': [
-            'ddtrace-run = ddtrace.commands.ddtrace_run:main'
+            'lightstep-ddtrace-run = ddtrace.commands.ddtrace_run:main'
         ]
     },
     classifiers=[
@@ -90,8 +103,6 @@ setup_kwargs = dict(
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
     ],
-    use_scm_version=True,
-    setup_requires=['setuptools_scm'],
 )
 
 
@@ -139,11 +150,11 @@ try:
     kwargs = copy.deepcopy(setup_kwargs)
     kwargs['ext_modules'] = [
         Extension(
-            'ddtrace.vendor.wrapt._wrappers',
+            'lightste-ddtrace.vendor.wrapt._wrappers',
             sources=['ddtrace/vendor/wrapt/_wrappers.c'],
         ),
         Extension(
-            'ddtrace.vendor.msgpack._cmsgpack',
+            'lightstep-ddtrace.vendor.msgpack._cmsgpack',
             sources=['ddtrace/vendor/msgpack/_cmsgpack.cpp'],
             libraries=libraries,
             include_dirs=['ddtrace/vendor/'],
