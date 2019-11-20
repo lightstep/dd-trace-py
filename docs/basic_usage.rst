@@ -9,12 +9,12 @@ With ``ddtrace`` installed, the application can be instrumented.
 Auto Instrumentation
 --------------------
 
-``ddtrace-run``
+``lightstep-ddtrace-run``
 ^^^^^^^^^^^^^^^
 
 Python applications can easily be instrumented with ``ddtrace`` by using the
-included ``ddtrace-run`` command. Simply prefix your Python execution command
-with ``ddtrace-run`` in order to auto-instrument the libraries in your
+included ``lightstep-ddtrace-run`` command. Simply prefix your Python execution command
+with ``lightstep-ddtrace-run`` in order to auto-instrument the libraries in your
 application.
 
 For example, if the command to run your application is::
@@ -23,9 +23,9 @@ $ python app.py
 
 then to auto-instrument using Datadog, the corresponding command is::
 
-$ ddtrace-run python app.py
+$ lightstep-ddtrace-run python app.py
 
-For more advanced usage of ``ddtrace-run`` refer to the documentation :ref:`here<ddtracerun>`.
+For more advanced usage of ``lightstep-ddtrace-run`` refer to the documentation :ref:`here<ddtracerun>`.
 
 ``patch_all``
 ^^^^^^^^^^^^^

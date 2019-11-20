@@ -22,8 +22,8 @@ class TraceMiddleware(object):
         log.debug('flask: initializing trace middleware')
 
         # Attach settings to the inner application middleware. This is required if double
-        # instrumentation happens (i.e. `ddtrace-run` with `TraceMiddleware`). In that
-        # case, `ddtrace-run` instruments the application, but then users code is unable
+        # instrumentation happens (i.e. `lightstep-ddtrace-run` with `TraceMiddleware`). In that
+        # case, `lightstep-ddtrace-run` instruments the application, but then users code is unable
         # to update settings such as `distributed_tracing` flag. This step can be removed
         # when the `Config` object is used
         self.app._tracer = tracer

@@ -524,7 +524,7 @@ See also the `Python OpenTracing`_ repository for usage of the tracer.
 The Datadog OpenTracing tracer can be used alongside the Datadog tracer. This
 provides the advantage of providing tracing information collected by
 ``ddtrace`` in addition to OpenTracing.  The simplest way to do this is to use
-the :ref:`ddtrace-run<ddtracerun>` command to invoke your OpenTraced
+the :ref:`lightstep-ddtrace-run<ddtracerun>` command to invoke your OpenTraced
 application.
 
 
@@ -537,23 +537,23 @@ application.
 
 .. _ddtracerun:
 
-``ddtrace-run``
+``lightstep-ddtrace-run``
 ---------------
 
-``ddtrace-run`` will trace :ref:`supported<Supported Libraries>` web frameworks
+``lightstep-ddtrace-run`` will trace :ref:`supported<Supported Libraries>` web frameworks
 and database modules without the need for changing your code::
 
-  $ ddtrace-run -h
+  $ lightstep-ddtrace-run -h
 
   Execute the given Python program, after configuring it
   to emit Datadog traces.
 
   Append command line arguments to your program as usual.
 
-  Usage: [ENV_VARS] ddtrace-run <my_program>
+  Usage: [ENV_VARS] lightstep-ddtrace-run <my_program>
 
 
-The available environment variables for ``ddtrace-run`` are:
+The available environment variables for ``lightstep-ddtrace-run`` are:
 
 * ``DATADOG_TRACE_ENABLED=true|false`` (default: true): Enable web framework and
   library instrumentation. When false, your application code will not generate
@@ -578,24 +578,24 @@ The available environment variables for ``ddtrace-run`` are:
   Sampling`
 * ``DD_LOGS_INJECTION`` (default: false): enables :ref:`Logs Injection`
 
-``ddtrace-run`` respects a variety of common entrypoints for web applications:
+``lightstep-ddtrace-run`` respects a variety of common entrypoints for web applications:
 
-- ``ddtrace-run python my_app.py``
-- ``ddtrace-run python manage.py runserver``
-- ``ddtrace-run gunicorn myapp.wsgi:application``
-- ``ddtrace-run uwsgi --http :9090 --wsgi-file my_app.py``
+- ``lightstep-ddtrace-run python my_app.py``
+- ``lightstep-ddtrace-run python manage.py runserver``
+- ``lightstep-ddtrace-run gunicorn myapp.wsgi:application``
+- ``lightstep-ddtrace-run uwsgi --http :9090 --wsgi-file my_app.py``
 
 
 Pass along command-line arguments as your program would normally expect them::
 
-$ ddtrace-run gunicorn myapp.wsgi:application --max-requests 1000 --statsd-host localhost:8125
+$ lightstep-ddtrace-run gunicorn myapp.wsgi:application --max-requests 1000 --statsd-host localhost:8125
 
 If you're running in a Kubernetes cluster and still don't see your traces, make
 sure your application has a route to the tracing Agent. An easy way to test
 this is with a::
 
 $ pip install ipython
-$ DATADOG_TRACE_DEBUG=true ddtrace-run ipython
+$ DATADOG_TRACE_DEBUG=true lightstep-ddtrace-run ipython
 
 Because iPython uses SQLite, it will be automatically instrumented and your
 traces should be sent off. If an error occurs, a message will be displayed in

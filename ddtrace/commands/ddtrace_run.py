@@ -19,7 +19,7 @@ USAGE = """
 Execute the given Python program after configuring it to emit Datadog traces.
 Append command line arguments to your program as usual.
 
-Usage: [ENV_VARS] ddtrace-run <my_program>
+Usage: [ENV_VARS] lightstep-ddtrace-run <my_program>
 
 Available environment variables:
 

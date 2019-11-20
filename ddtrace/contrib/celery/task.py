@@ -5,12 +5,12 @@ from ...utils.deprecation import deprecation
 
 def patch_task(task, pin=None):
     """Deprecated API. The new API uses signals that can be activated via
-    patch(celery=True) or through `ddtrace-run` script. Using this API
+    patch(celery=True) or through `lightstep-ddtrace-run` script. Using this API
     enables instrumentation on all tasks.
     """
     deprecation(
         name='ddtrace.contrib.celery.patch_task',
-        message='Use `patch(celery=True)` or `ddtrace-run` script instead',
+        message='Use `patch(celery=True)` or `lightstep-ddtrace-run` script instead',
         version='1.0.0',
     )
 

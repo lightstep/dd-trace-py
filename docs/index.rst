@@ -119,7 +119,7 @@ contacting support.
 
 
 .. [1] Libraries that are automatically instrumented when the
-  :ref:`ddtrace-run<ddtracerun>` command is used or the ``patch_all()`` method
+  :ref:`lightstep-ddtrace-run<ddtracerun>` command is used or the ``patch_all()`` method
   is called. Always use ``patch()`` and ``patch_all()`` as soon as possible in
   your Python entrypoint.
 

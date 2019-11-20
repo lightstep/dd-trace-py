@@ -31,7 +31,7 @@ class TestFlask(TestCase):
         self.app = self.flask_app.test_client()
 
     def test_double_instrumentation(self):
-        # ensure Flask is never instrumented twice when `ddtrace-run`
+        # ensure Flask is never instrumented twice when `lightstep-ddtrace-run`
         # and `TraceMiddleware` are used together. `traced_app` MUST
         # be assigned otherwise it's not possible to reproduce the
         # problem (the test scope must keep a strong reference)
@@ -43,7 +43,7 @@ class TestFlask(TestCase):
 
     def test_double_instrumentation_config(self):
         # ensure Flask uses the last set configuration to be sure
-        # there are no breaking changes for who uses `ddtrace-run`
+        # there are no breaking changes for who uses `lightstep-ddtrace-run`
         # with the `TraceMiddleware`
         TraceMiddleware(
             self.flask_app,

@@ -1,6 +1,6 @@
 """
 An integration test that uses a real Redis client
-that we expect to be implicitly traced via `ddtrace-run`
+that we expect to be implicitly traced via `lightstep-ddtrace-run`
 """
 
 import redis
