@@ -47,9 +47,10 @@ version = get_version('ddtrace')
 long_description = """
 # dd-trace-py
 
-`lighstep-ddtrace` is Datadog's tracing library for Python.  It is used to trace requests
-as they flow across web servers, databases and microservices so that developers
-have great visiblity into bottlenecks and troublesome requests.
+`lighstep-ddtrace` is LightStep's fork of Datadog's tracing library for Python.
+It is used to trace requests as they flow across web servers, databases and
+microservices so that developers have great visiblity into bottlenecks and
+troublesome requests.
 
 ## Getting Started
 
@@ -73,8 +74,8 @@ setup_kwargs = dict(
     version=version,
     description='Datadog tracing code',
     url='https://github.com/lightstep/dd-trace-py',
-    author='Datadog, Inc.',
-    author_email='dev@datadoghq.com',
+    author='LightStep',
+    author_email='support@lightstep.com',
     long_description=long_description,
     long_description_content_type='text/markdown',
     license='BSD',

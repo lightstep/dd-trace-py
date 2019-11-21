@@ -55,3 +55,10 @@ Check out https://docs.lightstep.com/docs/python-auto-instrumentation for more i
 ## Support
 
 Contact `support@lightstep.com` for additional questions and resources, or to be added to our community slack channel.
+
+## Licensing
+
+This is a fork of [dd-trace-py][dd-trace-py repo] and retains the original Datadog license and copyright. See the [license][license file] for more details.
+
+[dd-trace-py repo]: https://github.com/DataDog/dd-trace-py
+[license file]: https://github.com/lightstep/dd-trace-py/blob/master/LICENSE
