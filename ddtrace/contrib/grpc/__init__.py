@@ -2,7 +2,7 @@
 The gRPC integration traces the client and server using interceptor pattern.
 
 gRPC will be automatically instrumented with ``patch_all``, or when using
-the ``ddtrace-run`` command.
+the ``ls-trace-run`` command.
 gRPC is instrumented on import. To instrument gRPC manually use the
 ``patch`` function.::
 

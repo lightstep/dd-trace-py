@@ -4,12 +4,12 @@ from ddtrace.vendor import wrapt
 
 
 class AutoPatchTestCase(unittest.TestCase):
-    """Test ensuring that ddtrace-run patches pymemcache.
+    """Test ensuring that ls-trace-run patches pymemcache.
 
     This ensures that things like the patch functions are properly exported
     from the module and used to patch the library.
 
-    Note: you may get cryptic errors due to ddtrace-run failing, such as
+    Note: you may get cryptic errors due to ls-trace-run failing, such as
 
         Traceback (most recent call last):
         File ".../dev/dd-trace-py/tests/contrib/pymemcache/test_autopatch.py", line 8, in test_patch

@@ -23,9 +23,9 @@ To configure tracing manually::
         app.run()
 
 
-You may also enable Flask tracing automatically via ddtrace-run::
+You may also enable Flask tracing automatically via ls-trace-run::
 
-    ddtrace-run python app.py
+    ls-trace-run python app.py
 
 
 Configuration

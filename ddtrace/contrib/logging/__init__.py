@@ -9,10 +9,10 @@ updated to include ``dd.trace_id`` and ``dd.span_id`` attributes from the log
 record. The integration with Logs occurs as long as the log entry includes
 ``dd.trace_id=%(dd.trace_id)s`` and ``dd.span_id=%(dd.span_id)s``.
 
-ddtrace-run
+ls-trace-run
 -----------
 
-When using ``ddtrace-run``, enable patching by setting the environment variable
+When using ``ls-trace-run``, enable patching by setting the environment variable
 ``DD_LOGS_INJECTION=true``. The logger by default will have a format that
 includes trace information::
 

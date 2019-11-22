@@ -1,11 +1,21 @@
 import copy
 import os
+import re
 import sys
 
 from distutils.command.build_ext import build_ext
 from distutils.errors import CCompilerError, DistutilsExecError, DistutilsPlatformError
 from setuptools import setup, find_packages, Extension
 from setuptools.command.test import test as TestCommand
+
+
+def get_version(package):
+    """
+    Return package version as listed in `__version__` in `__init__.py`.
+    This method prevents to import packages at setup-time.
+    """
+    init_py = open(os.path.join(package, '__init__.py')).read()
+    return re.search("__version__ = ['\"]([^'\"]+)['\"]", init_py).group(1)
 
 
 class Tox(TestCommand):
@@ -32,36 +42,40 @@ class Tox(TestCommand):
         sys.exit(errno)
 
 
+version = get_version('ddtrace')
+
 long_description = """
-# dd-trace-py
+# ls-trace-py
 
-`ddtrace` is Datadog's tracing library for Python.  It is used to trace requests
-as they flow across web servers, databases and microservices so that developers
-have great visiblity into bottlenecks and troublesome requests.
+Datadog has generously announced the [donation][donation post] of their tracer libraries
+to the [OpenTelemety][opentelemetry docs] project. Auto-instrumentation
+is a core feature of these libraries, making it possible to create and
+collect telemetry data without needing to change your code. LightStep
+wants you to be able to use these libraries now! We've forked the Datadog
+libraries into the LightStep repo as agents. You can install and use these agents to take advantage of
+auto-instrumentation without waiting for OpenTelemetry. Each LightStep agent
+is "pinned" to a Datadog release and is fully supported by LightStep's
+Customer Success team.
 
-## Getting Started
+Simply install the agent, configure it to communicate with LightStep
+Satellites, run your app, and then any [frameworks][framework docs], [data stores][datastore docs],
+and [libraries][libs] included in your app will send data to LightStep as distributed traces.
 
-For a basic product overview, installation and quick start, check out our
-[setup documentation][setup docs].
-
-For more advanced usage and configuration, check out our [API
-documentation][pypi docs].
-
-For descriptions of terminology used in APM, take a look at the [official
-documentation][visualization docs].
-
-[setup docs]: https://docs.datadoghq.com/tracing/setup/python/
-[pypi docs]: http://pypi.datadoghq.com/trace/docs/
-[visualization docs]: https://docs.datadoghq.com/tracing/visualization/
+[donation post]: https://www.datadoghq.com/blog/opentelemetry-instrumentation/
+[opentelemetry docs]: https://opentelemetry.io/
+[framework docs]: https://docs.lightstep.com/docs/python-auto-instrumentation#section-frameworks
+[datastore docs]: https://docs.lightstep.com/docs/python-auto-instrumentation#section-data-stores
+[libs]: https://docs.lightstep.com/docs/python-auto-instrumentation#section-libraries
 """
 
 # Base `setup()` kwargs without any C-extension registering
 setup_kwargs = dict(
-    name='ddtrace',
+    name='ls-trace',
+    version=version,
     description='Datadog tracing code',
-    url='https://github.com/DataDog/dd-trace-py',
-    author='Datadog, Inc.',
-    author_email='dev@datadoghq.com',
+    url='https://github.com/lightstep/dd-trace-py',
+    author='LightStep',
+    author_email='support@lightstep.com',
     long_description=long_description,
     long_description_content_type='text/markdown',
     license='BSD',
@@ -79,7 +93,7 @@ setup_kwargs = dict(
     cmdclass={'test': Tox},
     entry_points={
         'console_scripts': [
-            'ddtrace-run = ddtrace.commands.ddtrace_run:main'
+            'ls-trace-run = ddtrace.commands.ddtrace_run:main'
         ]
     },
     classifiers=[
@@ -90,8 +104,6 @@ setup_kwargs = dict(
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
     ],
-    use_scm_version=True,
-    setup_requires=['setuptools_scm'],
 )
 
 
@@ -139,11 +151,11 @@ try:
     kwargs = copy.deepcopy(setup_kwargs)
     kwargs['ext_modules'] = [
         Extension(
-            'ddtrace.vendor.wrapt._wrappers',
+            'lightste-ddtrace.vendor.wrapt._wrappers',
             sources=['ddtrace/vendor/wrapt/_wrappers.c'],
         ),
         Extension(
-            'ddtrace.vendor.msgpack._cmsgpack',
+            'ls-trace.vendor.msgpack._cmsgpack',
             sources=['ddtrace/vendor/msgpack/_cmsgpack.cpp'],
             libraries=libraries,
             include_dirs=['ddtrace/vendor/'],

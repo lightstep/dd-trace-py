@@ -9,7 +9,7 @@ class TestRequestsGevent(unittest.TestCase):
 
         This is a regression test for https://github.com/DataDog/dd-trace-py/issues/506
 
-        When using `ddtrace-run` along with `requests` and `gevent` our patching causes
+        When using `ls-trace-run` along with `requests` and `gevent` our patching causes
         `requests` and `urllib3` to get loaded before `gevent` has a chance to monkey patch.
 
         This causes `gevent` to show a warning and under certain versions cause
