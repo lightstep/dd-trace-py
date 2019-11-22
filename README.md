@@ -50,9 +50,17 @@ ls-trace-run ./app.py
 
 A trace from the application should be available in your [LightStep dashboard](https://app.lightstep.com/)
 
-## Next Steps
+## Additional Resources
 
 Check out https://docs.lightstep.com/docs/python-auto-instrumentation for more information
+
+## Versioning
+
+ls-trace follows its own versioning scheme. The table below shows the corresponding dd-trace-py versions.
+
+| ls-trace version | dd-trace-py version |
+|------------------|---------------------|
+| v0.1.0           | v0.31.0             |
 
 ## Support
 
