@@ -36,7 +36,7 @@ class DdtraceRunTest(BaseTestCase):
         """
         with self.override_env(dict(DATADOG_SERVICE_NAME='my_test_service')):
             out = subprocess.check_output(
-                ['lightstep-ddtrace-run', 'python', 'tests/commands/ddtrace_run_service.py']
+                ['ls-trace-run', 'python', 'tests/commands/ddtrace_run_service.py']
             )
             assert out.startswith(b'Test success')
 
@@ -46,7 +46,7 @@ class DdtraceRunTest(BaseTestCase):
         """
         with self.override_env(dict(DATADOG_ENV='test')):
             out = subprocess.check_output(
-                ['lightstep-ddtrace-run', 'python', 'tests/commands/ddtrace_run_env.py']
+                ['ls-trace-run', 'python', 'tests/commands/ddtrace_run_env.py']
             )
             assert out.startswith(b'Test success')
 
@@ -56,28 +56,28 @@ class DdtraceRunTest(BaseTestCase):
         """
         with self.override_env(dict(DATADOG_TRACE_ENABLED='false')):
             out = subprocess.check_output(
-                ['lightstep-ddtrace-run', 'python', 'tests/commands/ddtrace_run_disabled.py']
+                ['ls-trace-run', 'python', 'tests/commands/ddtrace_run_disabled.py']
             )
             assert out.startswith(b'Test success')
 
         with self.override_env(dict(DATADOG_TRACE_ENABLED='true')):
             out = subprocess.check_output(
-                ['lightstep-ddtrace-run', 'python', 'tests/commands/ddtrace_run_enabled.py']
+                ['ls-trace-run', 'python', 'tests/commands/ddtrace_run_enabled.py']
             )
             assert out.startswith(b'Test success')
 
     def test_patched_modules(self):
         """
-        Using `lightstep-ddtrace-run` registers some generic patched modules
+        Using `ls-trace-run` registers some generic patched modules
         """
         out = subprocess.check_output(
-            ['lightstep-ddtrace-run', 'python', 'tests/commands/ddtrace_run_patched_modules.py']
+            ['ls-trace-run', 'python', 'tests/commands/ddtrace_run_patched_modules.py']
         )
         assert out.startswith(b'Test success')
 
     def test_integration(self):
         out = subprocess.check_output(
-            ['lightstep-ddtrace-run', 'python', '-m', 'tests.commands.ddtrace_run_integration']
+            ['ls-trace-run', 'python', '-m', 'tests.commands.ddtrace_run_integration']
         )
         assert out.startswith(b'Test success')
 
@@ -87,13 +87,13 @@ class DdtraceRunTest(BaseTestCase):
         """
         with self.override_env(dict(DATADOG_TRACE_DEBUG='false')):
             out = subprocess.check_output(
-                ['lightstep-ddtrace-run', 'python', 'tests/commands/ddtrace_run_no_debug.py']
+                ['ls-trace-run', 'python', 'tests/commands/ddtrace_run_no_debug.py']
             )
             assert out.startswith(b'Test success')
 
         with self.override_env(dict(DATADOG_TRACE_DEBUG='true')):
             out = subprocess.check_output(
-                ['lightstep-ddtrace-run', 'python', 'tests/commands/ddtrace_run_debug.py']
+                ['ls-trace-run', 'python', 'tests/commands/ddtrace_run_debug.py']
             )
             assert out.startswith(b'Test success')
 
@@ -105,7 +105,7 @@ class DdtraceRunTest(BaseTestCase):
         with self.override_env(dict(DATADOG_TRACE_AGENT_HOSTNAME='172.10.0.1',
                                     DATADOG_TRACE_AGENT_PORT='8120')):
             out = subprocess.check_output(
-                ['lightstep-ddtrace-run', 'python', 'tests/commands/ddtrace_run_hostname.py']
+                ['ls-trace-run', 'python', 'tests/commands/ddtrace_run_hostname.py']
             )
             assert out.startswith(b'Test success')
 
@@ -117,11 +117,11 @@ class DdtraceRunTest(BaseTestCase):
         with self.override_env(dict(DD_AGENT_HOST='172.10.0.1',
                                     DD_TRACE_AGENT_PORT='8120')):
             out = subprocess.check_output(
-                ['lightstep-ddtrace-run', 'python', 'tests/commands/ddtrace_run_hostname.py']
+                ['ls-trace-run', 'python', 'tests/commands/ddtrace_run_hostname.py']
             )
             assert out.startswith(b'Test success')
 
-            # Do we get the same results without `lightstep-ddtrace-run`?
+            # Do we get the same results without `ls-trace-run`?
             out = subprocess.check_output(
                 ['python', 'tests/commands/ddtrace_run_hostname.py']
             )
@@ -134,7 +134,7 @@ class DdtraceRunTest(BaseTestCase):
         with self.override_env(dict(DD_AGENT_HOST='172.10.0.1',
                                     DD_DOGSTATSD_PORT='8120')):
             out = subprocess.check_output(
-                ['lightstep-ddtrace-run', 'python', 'tests/commands/ddtrace_run_dogstatsd.py']
+                ['ls-trace-run', 'python', 'tests/commands/ddtrace_run_dogstatsd.py']
             )
             assert out.startswith(b'Test success')
 
@@ -144,7 +144,7 @@ class DdtraceRunTest(BaseTestCase):
         """
         with self.override_env(dict(DD_DOGSTATSD_URL='172.10.0.1:8120')):
             out = subprocess.check_output(
-                ['lightstep-ddtrace-run', 'python', 'tests/commands/ddtrace_run_dogstatsd.py']
+                ['ls-trace-run', 'python', 'tests/commands/ddtrace_run_dogstatsd.py']
             )
             assert out.startswith(b'Test success')
 
@@ -154,7 +154,7 @@ class DdtraceRunTest(BaseTestCase):
         """
         with self.override_env(dict(DD_DOGSTATSD_URL='udp://172.10.0.1:8120')):
             out = subprocess.check_output(
-                ['lightstep-ddtrace-run', 'python', 'tests/commands/ddtrace_run_dogstatsd.py']
+                ['ls-trace-run', 'python', 'tests/commands/ddtrace_run_dogstatsd.py']
             )
             assert out.startswith(b'Test success')
 
@@ -164,7 +164,7 @@ class DdtraceRunTest(BaseTestCase):
         """
         with self.override_env(dict(DD_DOGSTATSD_URL='unix:///dogstatsd.sock')):
             out = subprocess.check_output(
-                ['lightstep-ddtrace-run', 'python', 'tests/commands/ddtrace_run_dogstatsd.py']
+                ['ls-trace-run', 'python', 'tests/commands/ddtrace_run_dogstatsd.py']
             )
             assert out.startswith(b'Test success')
 
@@ -174,7 +174,7 @@ class DdtraceRunTest(BaseTestCase):
         """
         with self.override_env(dict(DD_DOGSTATSD_URL='/dogstatsd.sock')):
             out = subprocess.check_output(
-                ['lightstep-ddtrace-run', 'python', 'tests/commands/ddtrace_run_dogstatsd.py']
+                ['ls-trace-run', 'python', 'tests/commands/ddtrace_run_dogstatsd.py']
             )
             assert out.startswith(b'Test success')
 
@@ -184,7 +184,7 @@ class DdtraceRunTest(BaseTestCase):
         """
         with self.override_env(dict(DATADOG_PRIORITY_SAMPLING='True')):
             out = subprocess.check_output(
-                ['lightstep-ddtrace-run', 'python', 'tests/commands/ddtrace_run_priority_sampling.py']
+                ['ls-trace-run', 'python', 'tests/commands/ddtrace_run_priority_sampling.py']
             )
             assert out.startswith(b'Test success')
 
@@ -251,7 +251,7 @@ class DdtraceRunTest(BaseTestCase):
         # defined in users' PYTHONPATH.
         env = inject_sitecustomize('tests/commands/bootstrap')
         out = subprocess.check_output(
-            ['lightstep-ddtrace-run', 'python', 'tests/commands/ddtrace_run_sitecustomize.py'],
+            ['ls-trace-run', 'python', 'tests/commands/ddtrace_run_sitecustomize.py'],
             env=env,
         )
         assert out.startswith(b'Test success')
@@ -260,23 +260,23 @@ class DdtraceRunTest(BaseTestCase):
         # ensure `sitecustomize.py` is not loaded if `-S` is used
         env = inject_sitecustomize('tests/commands/bootstrap')
         out = subprocess.check_output(
-            ['lightstep-ddtrace-run', 'python', '-S', 'tests/commands/ddtrace_run_sitecustomize.py', '-S'],
+            ['ls-trace-run', 'python', '-S', 'tests/commands/ddtrace_run_sitecustomize.py', '-S'],
             env=env,
         )
         assert out.startswith(b'Test success')
 
     def test_argv_passed(self):
         out = subprocess.check_output(
-            ['lightstep-ddtrace-run', 'python', 'tests/commands/ddtrace_run_argv.py', 'foo', 'bar']
+            ['ls-trace-run', 'python', 'tests/commands/ddtrace_run_argv.py', 'foo', 'bar']
         )
         assert out.startswith(b'Test success')
 
     def test_got_app_name(self):
         """
-        apps run with lightstep-ddtrace-run have a proper app name
+        apps run with ls-trace-run have a proper app name
         """
         out = subprocess.check_output(
-            ['lightstep-ddtrace-run', 'python', 'tests/commands/ddtrace_run_app_name.py']
+            ['ls-trace-run', 'python', 'tests/commands/ddtrace_run_app_name.py']
         )
         assert out.startswith(b'ddtrace_run_app_name.py')
 
@@ -285,7 +285,7 @@ class DdtraceRunTest(BaseTestCase):
         """
         with self.override_env(dict(DD_TRACE_GLOBAL_TAGS='a:True,b:0,c:C')):
             out = subprocess.check_output(
-                ['lightstep-ddtrace-run', 'python', 'tests/commands/ddtrace_run_global_tags.py']
+                ['ls-trace-run', 'python', 'tests/commands/ddtrace_run_global_tags.py']
             )
             assert out.startswith(b'Test success')
 
@@ -294,6 +294,6 @@ class DdtraceRunTest(BaseTestCase):
         """
         with self.override_env(dict(DD_LOGS_INJECTION='true')):
             out = subprocess.check_output(
-                ['lightstep-ddtrace-run', 'python', 'tests/commands/ddtrace_run_logs_injection.py']
+                ['ls-trace-run', 'python', 'tests/commands/ddtrace_run_logs_injection.py']
             )
             assert out.startswith(b'Test success')

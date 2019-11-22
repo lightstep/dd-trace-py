@@ -45,6 +45,6 @@ def _include_me(config):
 
 def test_config_include():
     """ This test makes sure that relative imports still work when the
-    application is run with lightstep-ddtrace-run """
+    application is run with ls-trace-run """
     config = Configurator()
     config.include('tests.contrib.pyramid._include_me')

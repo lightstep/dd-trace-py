@@ -9,9 +9,9 @@ The molten web framework is automatically traced by ``ddtrace`` when calling ``p
     app = App(routes=[Route('/hello/{name}/{age}', hello)])
 
 
-You may also enable molten tracing automatically via ``lightstep-ddtrace-run``::
+You may also enable molten tracing automatically via ``ls-trace-run``::
 
-    lightstep-ddtrace-run python app.py
+    ls-trace-run python app.py
 
 
 Configuration

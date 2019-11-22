@@ -23,13 +23,13 @@ Quickstart
 ----------
 
 Getting started with ``ddtrace`` is as easy as prefixing your python
-entry-point command with ``lightstep-ddtrace-run``.
+entry-point command with ``ls-trace-run``.
 
 For example if you start your application with ``python app.py`` then run::
 
-  $ lightstep-ddtrace-run python app.py
+  $ ls-trace-run python app.py
 
-For more advanced usage of ``lightstep-ddtrace-run`` refer to the documentation :ref:`here<ddtracerun>`.
+For more advanced usage of ``ls-trace-run`` refer to the documentation :ref:`here<ddtracerun>`.
 
 To find out how to trace your own code manually refer to the documentation :ref:`here<basic usage>`.
 

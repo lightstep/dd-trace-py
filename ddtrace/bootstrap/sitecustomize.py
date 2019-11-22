@@ -1,5 +1,5 @@
 """
-Bootstrapping code that is run when using the `lightstep-ddtrace-run` Python entrypoint
+Bootstrapping code that is run when using the `ls-trace-run` Python entrypoint
 Add all monkey-patching that needs to run by default here
 """
 

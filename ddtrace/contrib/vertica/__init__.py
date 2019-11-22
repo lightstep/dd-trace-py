@@ -3,7 +3,7 @@ The Vertica integration will trace queries made using the vertica-python
 library.
 
 Vertica will be automatically instrumented with ``patch_all``, or when using
-the ``lightstep-ddtrace-run`` command.
+the ``ls-trace-run`` command.
 
 Vertica is instrumented on import. To instrument Vertica manually use the
 ``patch`` function. Note the ordering of the following statements::
