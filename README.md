@@ -45,6 +45,7 @@ export DD_TRACE_AGENT_URL=https://collector.lightstep.com:443
 export DD_TRACE_GLOBAL_TAGS="lightstep.service_name:<service_name>,lightstep.access_token:<access_token>"
 
 # run the application
+chmod +x ./app.py
 ls-trace-run ./app.py
 ```
 
