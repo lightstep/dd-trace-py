@@ -41,7 +41,7 @@ Now let's run the application using `ls-trace-run`
 # export configuration options
 export DD_TRACE_AGENT_URL=https://collector.lightstep.com:443
 # replace <service_name> with your service's name
-# replace <access_token> with your LightStep API token
+# replace <access_token> with your LightStep access token
 export DD_TRACE_GLOBAL_TAGS="lightstep.service_name:<service_name>,lightstep.access_token:<access_token>"
 
 # run the application
