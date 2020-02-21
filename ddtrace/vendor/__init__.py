@@ -8,19 +8,6 @@ whenever a dependency is imported. Doing this allows us to have a little more co
 Dependencies
 ============
 
-msgpack
--------
-
-Website: https://msgpack.org/
-Source: https://github.com/msgpack/msgpack-python
-Version: 0.6.1
-License: Apache License, Version 2.0
-
-Notes:
-  If you need to update any `*.pyx` files, be sure to run `cython --cplus msgpack/_cmsgpack.pyx` to regenerate `_cmsgpack.cpp`
-
-  `_packer.pyx` and `_unpacker.pyx` were updated to import from `ddtrace.vendor.msgpack`
-
 six
 ---
 
@@ -72,6 +59,28 @@ Notes:
   The source `monotonic.py` was added as `monotonic/__init__.py`
 
   No other changes were made
+
+debtcollector
+-------------
+
+Website: https://docs.openstack.org/debtcollector/latest/index.html
+Source: https://github.com/openstack/debtcollector
+Version: 1.22.0
+License: Apache License 2.0
+
+Notes:
+   Removed dependency on `pbr` and manually set `__version__`
+
+
+psutil
+------
+
+Website: https://github.com/giampaolo/psutil
+Source: https://github.com/giampaolo/psutil
+Version: 5.6.7
+License: BSD 3
+
+Notes:
 """
 
 # Initialize `ddtrace.vendor.datadog.base.log` logger with our custom rate limited logger

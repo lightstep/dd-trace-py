@@ -1,10 +1,10 @@
 import contextlib
-import os
 import sys
 import unittest
 
 import ddtrace
 
+from ..utils import override_env
 from ..utils.tracer import DummyTracer
 from ..utils.span import TestSpanContainer, TestSpan, NO_CHILDREN
 
@@ -25,53 +25,41 @@ class BaseTestCase(unittest.TestCase):
                     pass
     """
 
-    @staticmethod
-    @contextlib.contextmanager
-    def override_env(env):
-        """
-        Temporarily override ``os.environ`` with provided values
-        >>> with self.override_env(dict(DATADOG_TRACE_DEBUG=True)):
-            # Your test
-        """
-        # Copy the full original environment
-        original = dict(os.environ)
-
-        # Update based on the passed in arguments
-        os.environ.update(env)
-        try:
-            yield
-        finally:
-            # Full clear the environment out and reset back to the original
-            os.environ.clear()
-            os.environ.update(original)
+    # Expose `override_env` as `self.override_env`
+    override_env = staticmethod(override_env)
 
     @staticmethod
     @contextlib.contextmanager
     def override_global_config(values):
         """
-        Temporarily override an global configuration
-        >>> with self.override_global_config(dict(name=value,...)):
-            # Your test
+        Temporarily override an global configuration::
+
+            >>> with self.override_global_config(dict(name=value,...)):
+                # Your test
         """
         # DEV: Uses dict as interface but internally handled as attributes on Config instance
         analytics_enabled_original = ddtrace.config.analytics_enabled
         report_hostname_original = ddtrace.config.report_hostname
+        health_metrics_enabled_original = ddtrace.config.health_metrics_enabled
 
         ddtrace.config.analytics_enabled = values.get('analytics_enabled', analytics_enabled_original)
         ddtrace.config.report_hostname = values.get('report_hostname', report_hostname_original)
+        ddtrace.config.health_metrics_enabled = values.get('health_metrics_enabled', health_metrics_enabled_original)
         try:
             yield
         finally:
             ddtrace.config.analytics_enabled = analytics_enabled_original
             ddtrace.config.report_hostname = report_hostname_original
+            ddtrace.config.health_metrics_enabled = health_metrics_enabled_original
 
     @staticmethod
     @contextlib.contextmanager
     def override_config(integration, values):
         """
-        Temporarily override an integration configuration value
-        >>> with self.override_config('flask', dict(service_name='test-service')):
-            # Your test
+        Temporarily override an integration configuration value::
+
+            >>> with self.override_config('flask', dict(service_name='test-service')):
+                # Your test
         """
         options = getattr(ddtrace.config, integration)
 
@@ -90,9 +78,10 @@ class BaseTestCase(unittest.TestCase):
     @contextlib.contextmanager
     def override_http_config(integration, values):
         """
-        Temporarily override an integration configuration for HTTP value
-        >>> with self.override_http_config('flask', dict(trace_query_string=True)):
-            # Your test
+        Temporarily override an integration configuration for HTTP value::
+
+            >>> with self.override_http_config('flask', dict(trace_query_string=True)):
+                # Your test
         """
         options = getattr(ddtrace.config, integration).http
 
@@ -111,11 +100,12 @@ class BaseTestCase(unittest.TestCase):
     @contextlib.contextmanager
     def override_sys_modules(modules):
         """
-        Temporarily override ``sys.modules`` with provided dictionary of modules
-        >>> mock_module = mock.MagicMock()
-        >>> mock_module.fn.side_effect = lambda: 'test'
-        >>> with self.override_sys_modules(dict(A=mock_module)):
-            # Your test
+        Temporarily override ``sys.modules`` with provided dictionary of modules::
+
+            >>> mock_module = mock.MagicMock()
+            >>> mock_module.fn.side_effect = lambda: 'test'
+            >>> with self.override_sys_modules(dict(A=mock_module)):
+                # Your test
         """
         original = dict(sys.modules)
 

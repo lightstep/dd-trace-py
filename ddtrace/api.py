@@ -4,7 +4,7 @@ from json import loads
 import socket
 
 # project
-from .encoding import get_encoder, JSONEncoder
+from .encoding import Encoder, JSONEncoder
 from .compat import httplib, PYTHON_VERSION, PYTHON_INTERPRETER, get_connection_response
 from .internal.logger import get_logger
 from .internal.runtime import container
@@ -84,8 +84,8 @@ class Response(object):
                 return
 
             return loads(body)
-        except (ValueError, TypeError) as err:
-            log.debug('Unable to parse Datadog Agent JSON response: %s %r', err, body)
+        except (ValueError, TypeError):
+            log.debug('Unable to parse Datadog Agent JSON response: %r', body, exc_info=True)
 
     def __repr__(self):
         return '{0}(status={1!r}, body={2!r}, reason={3!r}, msg={4!r})'.format(
@@ -185,7 +185,7 @@ class API(object):
         if self._compatibility_mode:
             self._encoder = JSONEncoder()
         else:
-            self._encoder = encoder or get_encoder()
+            self._encoder = encoder or Encoder()
         # overwrite the Content-type with the one chosen in the Encoder
         self._headers.update({'Content-Type': self._encoder.content_type})
 

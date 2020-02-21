@@ -1,11 +1,11 @@
 import sys
 
-from ddtrace.ext import http as httpx
+from ddtrace.ext import SpanTypes, http as httpx
 from ddtrace.http import store_request_headers, store_response_headers
 from ddtrace.propagation.http import HTTPPropagator
 
 from ...compat import iteritems
-from ...constants import ANALYTICS_SAMPLE_RATE_KEY
+from ...constants import ANALYTICS_SAMPLE_RATE_KEY, SPAN_MEASURED_KEY
 from ...settings import config
 
 
@@ -30,8 +30,9 @@ class TraceMiddleware(object):
         span = self.tracer.trace(
             'falcon.request',
             service=self.service,
-            span_type=httpx.TYPE,
+            span_type=SpanTypes.WEB,
         )
+        span.set_tag(SPAN_MEASURED_KEY)
 
         # set analytics sample rate with global config enabled
         span.set_tag(
