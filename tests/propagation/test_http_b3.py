@@ -11,7 +11,7 @@ class TestB3HttpPropagation(TestCase):
         tracer = get_dummy_tracer()
         tracer.configure(http_propagator=B3HTTPPropagator)
 
-        with tracer.trace('global_root_span') as span:
+        with tracer.trace("global_root_span") as span:
             headers = {}
             set_http_propagator_factory(B3HTTPPropagator)
             propagator = HTTPPropagator()
@@ -26,29 +26,29 @@ class TestB3HttpPropagation(TestCase):
         tracer.configure(http_propagator=B3HTTPPropagator)
 
         headers = {
-            'x-b3-traceid': '4d2',
-            'x-b3-spanid': '162e',
-            'x-b3-sampled': '1',
+            "x-b3-traceid": "4d2",
+            "x-b3-spanid": "162e",
+            "x-b3-sampled": "1",
         }
 
         propagator = HTTPPropagator()
         context = propagator.extract(headers)
         tracer.context_provider.activate(context)
 
-        with tracer.trace('local_root_span') as span:
+        with tracer.trace("local_root_span") as span:
             assert span.trace_id == 1234
             assert span.parent_id == 5678
             assert span.context.sampling_priority == AUTO_KEEP
 
         headers = {
-            'x-b3-traceid': '4d2',
-            'x-b3-spanid': '162e',
-            'x-b3-sampled': '0',
+            "x-b3-traceid": "4d2",
+            "x-b3-spanid": "162e",
+            "x-b3-sampled": "0",
         }
 
         propagator = HTTPPropagator()
         context = propagator.extract(headers)
         tracer.context_provider.activate(context)
 
-        with tracer.trace('local_root_span') as span:
+        with tracer.trace("local_root_span") as span:
             assert span.context.sampling_priority == AUTO_REJECT
