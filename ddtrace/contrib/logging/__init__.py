@@ -10,7 +10,7 @@ record. The integration with Logs occurs as long as the log entry includes
 ``dd.trace_id=%(dd.trace_id)s`` and ``dd.span_id=%(dd.span_id)s``.
 
 ls-trace-run
------------
+------------
 
 When using ``ls-trace-run``, enable patching by setting the environment variable
 ``DD_LOGS_INJECTION=true``. The logger by default will have a format that
@@ -57,10 +57,10 @@ log formatter as in the following example::
 from ...utils.importlib import require_modules
 
 
-required_modules = ['logging']
+required_modules = ["logging"]
 
 with require_modules(required_modules) as missing_modules:
     if not missing_modules:
         from .patch import patch, unpatch
 
-        __all__ = ['patch', 'unpatch']
+        __all__ = ["patch", "unpatch"]

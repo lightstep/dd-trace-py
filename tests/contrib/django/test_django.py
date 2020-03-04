@@ -6,7 +6,7 @@ import pytest
 from ddtrace.constants import ANALYTICS_SAMPLE_RATE_KEY, SAMPLING_PRIORITY_KEY
 from ddtrace.ext import http, errors
 from ddtrace.ext.priority import USER_KEEP
-from ddtrace.propagation.http import HTTP_HEADER_TRACE_ID, HTTP_HEADER_PARENT_ID, HTTP_HEADER_SAMPLING_PRIORITY
+from ddtrace.propagation.datadog import HTTP_HEADER_TRACE_ID, HTTP_HEADER_PARENT_ID, HTTP_HEADER_SAMPLING_PRIORITY
 from ddtrace.propagation.utils import get_wsgi_header
 
 from tests.base import BaseTestCase
