@@ -9,6 +9,7 @@ from .ext import system
 from .ext.priority import AUTO_REJECT, AUTO_KEEP
 from .internal.logger import get_logger
 from .internal.runtime import RuntimeTags, RuntimeWorker
+from .internal.runtime.lightstep_metrics import LightstepMetricsWorker
 from .internal.writer import AgentWriter
 from .propagation.http import set_http_propagator_factory
 from .provider import DefaultContextProvider
@@ -419,7 +420,10 @@ class Tracer(object):
         self._dogstatsd_client.constant_tags = tags
 
     def _start_runtime_worker(self):
-        self._runtime_worker = RuntimeWorker(self._dogstatsd_client, self._RUNTIME_METRICS_INTERVAL)
+        if environ.get('DD_METRICS_RUNTIME', LightstepMetricsWorker) == "RuntimeWorker":            
+            self._runtime_worker = RuntimeWorker(self._dogstatsd_client, self._RUNTIME_METRICS_INTERVAL)
+        else:
+            self._runtime_worker = LightstepMetricsWorker(self._dogstatsd_client, self._RUNTIME_METRICS_INTERVAL)
         self._runtime_worker.start()
 
     def _check_new_process(self):
