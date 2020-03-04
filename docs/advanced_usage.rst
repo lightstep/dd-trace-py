@@ -72,7 +72,7 @@ on the other side, the metadata is retrieved and the trace can continue.
 To propagate the tracing information, HTTP headers are used to transmit the
 required metadata to piece together the trace.
 
-.. autoclass:: ddtrace.propagation.http.HTTPPropagator
+.. autoclass:: ddtrace.propagation.datadog.DatadogHTTPPropagator
     :members:
 
 Custom
@@ -538,7 +538,7 @@ application.
 .. _ddtracerun:
 
 ``ls-trace-run``
----------------
+----------------
 
 ``ls-trace-run`` will trace :ref:`supported<Supported Libraries>` web frameworks
 and database modules without the need for changing your code::

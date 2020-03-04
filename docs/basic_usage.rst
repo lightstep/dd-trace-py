@@ -10,7 +10,7 @@ Auto Instrumentation
 --------------------
 
 ``ls-trace-run``
-^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^
 
 Python applications can easily be instrumented with ``ddtrace`` by using the
 included ``ls-trace-run`` command. Simply prefix your Python execution command
