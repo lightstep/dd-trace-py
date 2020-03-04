@@ -10,7 +10,7 @@ Auto Instrumentation
 --------------------
 
 ``ls-trace-run``
-^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^
 
 Python applications can easily be instrumented with ``ddtrace`` by using the
 included ``ls-trace-run`` command. Simply prefix your Python execution command
@@ -75,8 +75,8 @@ API details of the decorator can be found here :py:meth:`ddtrace.Tracer.wrap`.
 Context Manager
 ^^^^^^^^^^^^^^^
 
-To trace an arbitrary block of code, you can use the :py:mod:`ddtrace.Span`
-context manager::
+To trace an arbitrary block of code, you can use :py:meth:`ddtrace.Tracer.trace` 
+that returns a :py:mod:`ddtrace.Span` which can be used as a context manager::
 
   # trace some interesting operation
   with tracer.trace('interesting.operations'):

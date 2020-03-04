@@ -2,8 +2,8 @@ import asyncio
 
 from ..asyncio import context_provider
 from ...compat import stringify
-from ...constants import ANALYTICS_SAMPLE_RATE_KEY
-from ...ext import http
+from ...constants import ANALYTICS_SAMPLE_RATE_KEY, SPAN_MEASURED_KEY
+from ...ext import SpanTypes, http
 from ...propagation.http import HTTPPropagator
 from ...settings import config
 
@@ -20,8 +20,9 @@ def trace_middleware(app, handler):
     ``aiohttp`` middleware that traces the handler execution.
     Because handlers are run in different tasks for each request, we attach the Context
     instance both to the Task and to the Request objects. In this way:
-        * the Task is used by the internal automatic instrumentation
-        * the ``Context`` attached to the request can be freely used in the application code
+
+    * the Task is used by the internal automatic instrumentation
+    * the ``Context`` attached to the request can be freely used in the application code
     """
     @asyncio.coroutine
     def attach_context(request):
@@ -42,8 +43,9 @@ def trace_middleware(app, handler):
         request_span = tracer.trace(
             'aiohttp.request',
             service=service,
-            span_type=http.TYPE,
+            span_type=SpanTypes.WEB,
         )
+        request_span.set_tag(SPAN_MEASURED_KEY)
 
         # Configure trace search sample rate
         # DEV: aiohttp is special case maintains separate configuration from config api

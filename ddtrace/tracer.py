@@ -2,6 +2,7 @@ import functools
 import logging
 from os import environ, getpid
 
+from ddtrace.vendor import debtcollector
 
 from .constants import FILTERS_KEY, SAMPLE_RATE_METRIC_KEY
 from .ext import system
@@ -12,10 +13,10 @@ from .internal.writer import AgentWriter
 from .propagation.http import set_http_propagator_factory
 from .provider import DefaultContextProvider
 from .context import Context
-from .sampler import AllSampler, DatadogSampler, RateSampler, RateByServiceSampler
+from .sampler import DatadogSampler, RateSampler, RateByServiceSampler
 from .span import Span
 from .utils.formats import get_env
-from .utils.deprecation import deprecated, warn
+from .utils.deprecation import deprecated, RemovedInDDTrace10Warning
 from .vendor.dogstatsd import DogStatsd
 from . import compat
 
@@ -44,6 +45,14 @@ def _parse_dogstatsd_url(url):
         raise ValueError('Unknown scheme `%s` for DogStatsD URL `{}`'.format(parsed.scheme))
 
 
+_INTERNAL_APPLICATION_SPAN_TYPES = [
+    "custom",
+    "template",
+    "web",
+    "worker"
+]
+
+
 class Tracer(object):
     """
     Tracer is used to create, sample and submit spans that measure the
@@ -59,8 +68,9 @@ class Tracer(object):
 
     DEFAULT_HOSTNAME = environ.get('DD_AGENT_HOST', environ.get('DATADOG_TRACE_AGENT_HOSTNAME', 'localhost'))
     DEFAULT_PORT = int(environ.get('DD_TRACE_AGENT_PORT', 8126))
-    DEFAULT_DOGSTATSD_PORT = int(get_env('dogstatsd', 'port', 8125))
-    DEFAULT_DOGSTATSD_URL = get_env('dogstatsd', 'url', 'udp://{}:{}'.format(DEFAULT_HOSTNAME, DEFAULT_DOGSTATSD_PORT))
+    DEFAULT_DOGSTATSD_PORT = int(get_env('dogstatsd', 'port', default=8125))
+    DEFAULT_DOGSTATSD_URL = get_env('dogstatsd', 'url',
+                                    default='udp://{}:{}'.format(DEFAULT_HOSTNAME, DEFAULT_DOGSTATSD_PORT))
     DEFAULT_AGENT_URL = environ.get('DD_TRACE_AGENT_URL', 'http://%s:%d' % (DEFAULT_HOSTNAME, DEFAULT_PORT))
 
     def __init__(self, url=DEFAULT_AGENT_URL, dogstatsd_url=DEFAULT_DOGSTATSD_URL):
@@ -106,7 +116,7 @@ class Tracer(object):
             port=port,
             https=https,
             uds_path=uds_path,
-            sampler=AllSampler(),
+            sampler=DatadogSampler(),
             context_provider=DefaultContextProvider(),
             dogstatsd_url=dogstatsd_url,
         )
@@ -134,10 +144,10 @@ class Tracer(object):
     def __call__(self):
         return self
 
-    def global_excepthook(self, type, value, traceback):
+    def global_excepthook(self, tp, value, traceback):
         """The global tracer except hook."""
         self._dogstatsd_client.increment('datadog.tracer.uncaught_exceptions', 1,
-                                         tags=['class:%s' % type.__name__])
+                                         tags=['class:%s' % tp.__name__])
 
     def get_call_context(self, *args, **kwargs):
         """
@@ -163,6 +173,10 @@ class Tracer(object):
         return self._context_provider
 
     # TODO: deprecate this method and make sure users create a new tracer if they need different parameters
+    @debtcollector.removals.removed_kwarg("dogstatsd_host", "Use `dogstatsd_url` instead",
+                                          category=RemovedInDDTrace10Warning)
+    @debtcollector.removals.removed_kwarg("dogstatsd_port", "Use `dogstatsd_url` instead",
+                                          category=RemovedInDDTrace10Warning)
     def configure(self, enabled=None, hostname=None, port=None, uds_path=None, https=None,
                   sampler=None, context_provider=None, wrap_executor=None, priority_sampling=None,
                   settings=None, collect_metrics=None, dogstatsd_host=None, dogstatsd_port=None,
@@ -209,22 +223,16 @@ class Tracer(object):
         if sampler is not None:
             self.sampler = sampler
 
-        # TODO: Remove when we remove the fallback to priority sampling
-        if isinstance(self.sampler, DatadogSampler):
-            self.sampler._priority_sampler = self.priority_sampler
-
         if dogstatsd_host is not None and dogstatsd_url is None:
             dogstatsd_url = 'udp://{}:{}'.format(dogstatsd_host, dogstatsd_port or self.DEFAULT_DOGSTATSD_PORT)
-            warn(('tracer.configure(): dogstatsd_host and dogstatsd_port are deprecated. '
-                  'Use dogstatsd_url={!r}').format(dogstatsd_url))
 
         if dogstatsd_url is not None:
             dogstatsd_kwargs = _parse_dogstatsd_url(dogstatsd_url)
-            self.log.debug('Connecting to DogStatsd({})'.format(dogstatsd_url))
+            self.log.debug('Connecting to DogStatsd(%s)', dogstatsd_url)
             self._dogstatsd_client = DogStatsd(**dogstatsd_kwargs)
 
         if hostname is not None or port is not None or uds_path is not None or https is not None or \
-                filters is not None or priority_sampling is not None:
+                filters is not None or priority_sampling is not None or sampler is not None:
             # Preserve hostname and port when overriding filters or priority sampling
             # This is clumsy and a good reason to get rid of this configure() API
             if hasattr(self, 'writer') and hasattr(self.writer, 'api'):
@@ -242,6 +250,7 @@ class Tracer(object):
                 uds_path=uds_path,
                 https=https,
                 filters=filters,
+                sampler=self.sampler,
                 priority_sampler=self.priority_sampler,
                 dogstatsd=self._dogstatsd_client,
             )
@@ -368,9 +377,12 @@ class Tracer(object):
                         context.sampling_priority = AUTO_REJECT
             else:
                 context.sampling_priority = AUTO_KEEP if span.sampled else AUTO_REJECT
+                # We must always mark the span as sampled so it is forwarded to the agent
+                span.sampled = True
 
             # add tags to root span to correlate trace with runtime metrics
-            if self._runtime_worker:
+            # only applied to spans with types that are internal to applications
+            if self._runtime_worker and span.span_type in _INTERNAL_APPLICATION_SPAN_TYPES:
                 span.set_tag('language', 'python')
 
         # add common tags
@@ -403,7 +415,7 @@ class Tracer(object):
             '{}:{}'.format(k, v)
             for k, v in RuntimeTags()
         ]
-        self.log.debug('Updating constant tags {}'.format(tags))
+        self.log.debug('Updating constant tags %s', tags)
         self._dogstatsd_client.constant_tags = tags
 
     def _start_runtime_worker(self):
@@ -538,10 +550,6 @@ class Tracer(object):
     @deprecated(message='Manually setting service info is no longer necessary', version='1.0.0')
     def set_service_info(self, *args, **kwargs):
         """Set the information about the given service.
-
-        :param str service: the internal name of the service (e.g. acme_search, datadog_web)
-        :param str app: the off the shelf name of the application (e.g. rails, postgres, custom-app)
-        :param str app_type: the type of the application (e.g. db, web)
         """
         return
 
