@@ -191,10 +191,10 @@ class LightstepMetricsWorker(_worker.PeriodicWorkerThread):
                 duration=duration,
                 start=start_time,
                 labels=labels,
+                metric_name=key,
+                double_value=value,
+                kind=metric_type,
             )
-            point.metric_name = key
-            point.double_value = value
-            point.kind = metric_type
         log.debug("Metrics collected: {}".format(request))
         return request
 
