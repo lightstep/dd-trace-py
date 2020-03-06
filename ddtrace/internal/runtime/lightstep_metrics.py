@@ -9,6 +9,8 @@ from ... import _worker
 from .constants import GC_RUNTIME_METRICS
 from .metric_collectors import GCRuntimeMetricCollector, RuntimeMetricCollector
 from .runtime_metrics import RuntimeCollectorsIterable
+from google.protobuf.duration_pb2 import Duration
+from google.protobuf.timestamp_pb2 import Timestamp
 from ddtrace.vendor.lightstep.collector_pb2 import KeyValue, Reporter
 from ddtrace.vendor.lightstep.metrics_pb2 import IngestRequest, MetricKind
 
@@ -159,31 +161,40 @@ class LightstepMetricsWorker(_worker.PeriodicWorkerThread):
         self._client = client
         self._runtime_metrics = LightstepRuntimeMetrics()
         self._reporter = Reporter(tags=[
+            # TODO: pull the component name from the global tags if possible
             KeyValue(key="lightstep.component_name", string_value=os.getenv("LIGHTSTEP_COMPONENT_NAME")),
             KeyValue(key="lightstep.hostname", string_value=os.uname()[1]),
             KeyValue(key="lightstep.reporter_platform", string_value="ls-trace-py"),
             KeyValue(key="lightstep.reporter_platform_version", string_value=platform.python_version())
         ])
+        self._retries = 1
     
     def _ingest_request(self):
         """ Interate through the metrics and create an IngestRequest
         """
         request = IngestRequest(reporter=self._reporter)
         request.idempotency_key = self._generate_idempotency_key()
+        start_time = Timestamp()
+        start_time.GetCurrentTime()
+        labels = [
+            KeyValue(key="lightstep.component_name", string_value=os.getenv("LIGHTSTEP_COMPONENT_NAME")),
+        ]
+        duration = Duration()
+        duration.FromSeconds(self._retries * self.FLUSH_INTERVAL)
         for metric in self._runtime_metrics:
             metric_type = MetricKind.GAUGE
             if len(metric) == 3:
                 key, value, metric_type = metric
             else:
                 key, value = metric
-            point = request.points.add()
+            point = request.points.add(
+                duration=duration,
+                start=start_time,
+                labels=labels,
+            )
             point.metric_name = key
             point.double_value = value
             point.kind = metric_type
-        # TODO: still needs a few fields:
-        # - duration
-        # - start
-        # - labels
         log.debug("Metrics collected: {}".format(request))
         return request
 
@@ -194,9 +205,11 @@ class LightstepMetricsWorker(_worker.PeriodicWorkerThread):
         ingest_request = self._ingest_request()
         try:
             self._client.send(ingest_request.SerializeToString())
+            self._retries = 1
         except Exception:
             log.debug("failed request: {}".format(ingest_request.idempotency_key))
             self._runtime_metrics.rollback()
+            self._retries += 1
 
     run_periodic = flush
     on_shutdown = flush
