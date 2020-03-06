@@ -19,6 +19,7 @@ from .span import Span
 from .utils.formats import get_env
 from .utils.deprecation import deprecated, RemovedInDDTrace10Warning
 from .vendor.dogstatsd import DogStatsd
+from .vendor.lightstep import MetricsReporter
 from . import compat
 
 
@@ -420,10 +421,10 @@ class Tracer(object):
         self._dogstatsd_client.constant_tags = tags
 
     def _start_runtime_worker(self):
-        if environ.get('DD_METRICS_RUNTIME', LightstepMetricsWorker) == "RuntimeWorker":            
+        if environ.get("DD_METRICS_RUNTIME", LightstepMetricsWorker) == "RuntimeWorker":
             self._runtime_worker = RuntimeWorker(self._dogstatsd_client, self._RUNTIME_METRICS_INTERVAL)
         else:
-            self._runtime_worker = LightstepMetricsWorker(self._dogstatsd_client, self._RUNTIME_METRICS_INTERVAL)
+            self._runtime_worker = LightstepMetricsWorker(MetricsReporter(), self._RUNTIME_METRICS_INTERVAL)
         self._runtime_worker.start()
 
     def _check_new_process(self):
