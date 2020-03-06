@@ -1,10 +1,16 @@
 import logging
 import os
+import platform
+import random
+import string
 
 from ... import _worker
 
-from .metric_collectors import RuntimeMetricCollector
+from .constants import GC_RUNTIME_METRICS
+from .metric_collectors import GCRuntimeMetricCollector, RuntimeMetricCollector
 from .runtime_metrics import RuntimeCollectorsIterable
+from ddtrace.vendor.lightstep.collector_pb2 import KeyValue, Reporter
+from ddtrace.vendor.lightstep.metrics_pb2 import IngestRequest, MetricKind
 
 log = logging.getLogger(__name__)
 
@@ -50,8 +56,16 @@ class LightstepPSUtilRuntimeMetricCollector(RuntimeMetricCollector):
 
     required_modules = ["ddtrace.vendor.psutil"]
     stored_value = dict(
-        CPU_TIME_SYS_TOTAL=0, CPU_TIME_USER_TOTAL=0, CTX_SWITCH_VOLUNTARY_TOTAL=0, CTX_SWITCH_INVOLUNTARY_TOTAL=0,
+        CPU_TIME_SYS_TOTAL=0,
+        CPU_TIME_USER_TOTAL=0,
+        SYSTEM_CPU_TOTAL=0,
+        SYSTEM_CPU_USER_TOTAL=0,
+        SYSTEM_CPU_IDLE_TOTAL=0,
+        SYSTEM_CPU_NICE_TOTAL=0,
+        NET_RECV_TOTAL=0,
+        NET_SENT_TOTAL=0,
     )
+    previous_value = dict()
 
     def _on_modules_load(self):
         self.proc = self.modules["ddtrace.vendor.psutil"].Process(os.getpid())
@@ -68,58 +82,121 @@ class LightstepPSUtilRuntimeMetricCollector(RuntimeMetricCollector):
             cpu_time_sys = cpu_time_sys_total - self.stored_value["CPU_TIME_SYS_TOTAL"]
             cpu_time_user = cpu_time_user_total - self.stored_value["CPU_TIME_USER_TOTAL"]
 
-            system_cpu = self.cpu()
-            system_memory = self.mem()
-            system_network = self.net()
+            system_cpu_total = self.cpu().system
+            system_cpu_user_total = self.cpu().user
+            system_cpu_idle_total = self.cpu().idle
+            system_cpu_nice_total = self.cpu().nice
+            system_cpu = system_cpu_total - self.stored_value["SYSTEM_CPU_TOTAL"]
+            system_cpu_user = system_cpu_user_total - self.stored_value["SYSTEM_CPU_USER_TOTAL"]
+            system_cpu_idle = system_cpu_idle_total - self.stored_value["SYSTEM_CPU_IDLE_TOTAL"]
+            system_cpu_nice = system_cpu_nice_total - self.stored_value["SYSTEM_CPU_NICE_TOTAL"]
 
-            self.stored_value = dict(CPU_TIME_SYS_TOTAL=cpu_time_sys_total, CPU_TIME_USER_TOTAL=cpu_time_user_total,)
+            net_recv_total = self.net().bytes_recv
+            net_sent_total = self.net().bytes_sent
+            net_recv = net_recv_total - self.stored_value["NET_RECV_TOTAL"]
+            net_sent = net_sent_total - self.stored_value["NET_SENT_TOTAL"]
+
+            system_memory = self.mem()
+
+            self.previous_value = self.stored_value
+
+            self.stored_value = dict(
+                CPU_TIME_SYS_TOTAL=cpu_time_sys_total,
+                CPU_TIME_USER_TOTAL=cpu_time_user_total,
+                SYSTEM_CPU_TOTAL=system_cpu_total,
+                SYSTEM_CPU_USER_TOTAL=system_cpu_user_total,
+                SYSTEM_CPU_IDLE_TOTAL=system_cpu_idle_total,
+                SYSTEM_CPU_NICE_TOTAL=system_cpu_nice_total,
+                NET_RECV_TOTAL=net_recv_total,
+                NET_SENT_TOTAL=net_sent_total,
+            )
 
             metrics = [
                 # process metrics
-                (LS_PROCESS_CPU_TIME_SYS, cpu_time_sys),
-                (LS_PROCESS_CPU_TIME_USER, cpu_time_user),
-                (LS_PROCESS_MEM_RSS, self.proc.memory_info().rss),
+                (LS_PROCESS_CPU_TIME_SYS, cpu_time_sys, MetricKind.COUNTER),
+                (LS_PROCESS_CPU_TIME_USER, cpu_time_user, MetricKind.COUNTER),
+                (LS_PROCESS_MEM_RSS, self.proc.memory_info().rss, MetricKind.GAUGE),
                 # system CPU metrics
-                (LS_SYSTEM_CPU_TIME_SYS, system_cpu.system),
-                (LS_SYSTEM_CPU_TIME_USER, system_cpu.user),
-                (LS_SYSTEM_CPU_TIME_IDLE, system_cpu.idle),
-                (LS_SYSTEM_CPU_TIME_NICE, system_cpu.nice),
+                (LS_SYSTEM_CPU_TIME_SYS, system_cpu, MetricKind.COUNTER),
+                (LS_SYSTEM_CPU_TIME_USER, system_cpu_user, MetricKind.COUNTER),
+                (LS_SYSTEM_CPU_TIME_IDLE, system_cpu_idle, MetricKind.COUNTER),
+                (LS_SYSTEM_CPU_TIME_NICE, system_cpu_nice, MetricKind.COUNTER),
                 # system memory metrics
-                (LS_SYSTEM_MEM_AVAIL, system_memory.available),
-                (LS_SYSTEM_MEM_USED, system_memory.used),
+                (LS_SYSTEM_MEM_AVAIL, system_memory.available, MetricKind.GAUGE),
+                (LS_SYSTEM_MEM_USED, system_memory.used, MetricKind.GAUGE),
                 # system network metrics
-                (LS_SYSTEM_NET_RECV, system_network.bytes_recv),
-                (LS_SYSTEM_NET_SENT, system_network.bytes_sent),
+                (LS_SYSTEM_NET_RECV, net_recv, MetricKind.COUNTER),
+                (LS_SYSTEM_NET_SENT, net_sent, MetricKind.COUNTER),
             ]
 
             return metrics
 
+    def rollback(self):
+        self.stored_value = self.previous_value
+
 
 class LightstepRuntimeMetrics(RuntimeCollectorsIterable):
-    ENABLED = LS_RUNTIME_METRICS
+    ENABLED = GC_RUNTIME_METRICS | LS_RUNTIME_METRICS
     COLLECTORS = [
+        GCRuntimeMetricCollector,
         LightstepPSUtilRuntimeMetricCollector,
     ]
+
+    def rollback(self):
+        for c in self._collectors:
+            if hasattr(c, "rollback"):
+                c.rollback()
 
 
 class LightstepMetricsWorker(_worker.PeriodicWorkerThread):
     """ Worker thread to collect and write metrics to a Lightstep endpoint """
 
-    FLUSH_INTERVAL = 30
+    FLUSH_INTERVAL = 5
+    KEY_LENGTH = 30
 
     def __init__(self, client, flush_interval=FLUSH_INTERVAL):
         super(LightstepMetricsWorker, self).__init__(interval=flush_interval, name=self.__class__.__name__)
         self._client = client
         self._runtime_metrics = LightstepRuntimeMetrics()
+        self._reporter = Reporter(tags=[
+            KeyValue(key="lightstep.component_name", string_value=os.getenv("LIGHTSTEP_COMPONENT_NAME")),
+            KeyValue(key="lightstep.hostname", string_value=os.uname()[1]),
+            KeyValue(key="lightstep.reporter_platform", string_value="ls-trace-py"),
+            KeyValue(key="lightstep.reporter_platform_version", string_value=platform.python_version())
+        ])
+    
+    def _ingest_request(self):
+        """ Interate through the metrics and create an IngestRequest
+        """
+        request = IngestRequest(reporter=self._reporter)
+        request.idempotency_key = self._generate_idempotency_key()
+        for metric in self._runtime_metrics:
+            metric_type = MetricKind.GAUGE
+            if len(metric) == 3:
+                key, value, metric_type = metric
+            else:
+                key, value = metric
+            point = request.points.add()
+            point.metric_name = key
+            point.double_value = value
+            point.kind = metric_type
+        # TODO: still needs a few fields:
+        # - duration
+        # - start
+        # - labels
+        log.debug("Metrics collected: {}".format(request))
+        return request
 
-    def _to_pb(self):
-        for key, value in self._runtime_metrics:
-            log.debug("Writing metric %s:%s", key, value)
-            # self._statsd_client.gauge(key, value)
-        return
+    def _generate_idempotency_key(self):
+        return "".join(random.choice(string.ascii_lowercase) for i in range(self.KEY_LENGTH))
 
     def flush(self):
-        self._to_pb()
+        ingest_request = self._ingest_request()
+        try:
+            self._client.send(ingest_request.SerializeToString())
+        except Exception:
+            log.debug("failed request: {}".format(ingest_request.idempotency_key))
+            self._runtime_metrics.rollback()
 
     run_periodic = flush
     on_shutdown = flush
