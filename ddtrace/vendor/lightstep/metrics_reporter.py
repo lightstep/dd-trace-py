@@ -1,7 +1,6 @@
 from os import environ
 
 import backoff
-import requests
 
 DEFAULT_METRICS_HOSTNAME = environ.get("LIGHTSTEP_METRICS_HOST", environ.get("LIGHTSTEP_HOST", "ingest.lightstep.com"))
 DEFAULT_METRICS_PORT = environ.get("LIGHTSTEP_METRICS_PORT", environ.get("LIGHTSTEP_PORT", "443"))
@@ -30,7 +29,7 @@ class MetricsReporter:
         self._secure = secure
         self._path = path
 
-    @backoff.on_exception(backoff.expo, requests.exceptions.RequestException, max_time=5)
+    @backoff.on_exception(backoff.expo, Exception, max_time=5)
     def send(self, content):
         headers = {
             "Accept": DEFAULT_ACCEPT,
@@ -39,4 +38,5 @@ class MetricsReporter:
         }
         protocol = "https" if int(self._secure) else "http"
         url = "{}://{}:{}{}".format(protocol, self._host, self._port, self._path)
+        import requests
         return requests.post(url, headers=headers, data=content)
