@@ -192,7 +192,7 @@ class LightstepMetricsWorker(_worker.PeriodicWorkerThread):
                 key, value, metric_type = metric
             else:
                 key, value = metric
-            point = request.points.add(
+            request.points.add(
                 duration=duration,
                 start=start_time,
                 labels=labels,
@@ -200,7 +200,7 @@ class LightstepMetricsWorker(_worker.PeriodicWorkerThread):
                 double_value=value,
                 kind=metric_type,
             )
-        log.debug("Metrics collected: {}".format(request))
+        log.debug("Metrics collected: %s", request)
         return request
 
     def _generate_idempotency_key(self):
@@ -212,7 +212,7 @@ class LightstepMetricsWorker(_worker.PeriodicWorkerThread):
             self._client.send(ingest_request.SerializeToString())
             self._retries = 1
         except Exception:
-            log.debug("failed request: {}".format(ingest_request.idempotency_key))
+            log.debug("failed request: %s", ingest_request.idempotency_key)
             self._runtime_metrics.rollback()
             self._retries += 1
 
