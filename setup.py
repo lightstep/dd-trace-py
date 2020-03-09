@@ -102,7 +102,14 @@ and [libraries][libs] included in your app will send data to LightStep as distri
 # enum34 is an enum backport for earlier versions of python
 # funcsigs backport required for vendored debtcollector
 # encoding using msgpack
-install_requires = ["enum34; python_version<'3.4'", "funcsigs>=1.0.0;python_version=='2.7'", "msgpack>=0.5.0"]
+install_requires = [
+    "backoff>=1.10.0",
+    "enum34; python_version<'3.4'",
+    "funcsigs>=1.0.0;python_version=='2.7'",
+    "googleapis-common-protos>=1.51.0",
+    "msgpack>=0.5.0",
+    "requests>=2.23.0",
+]
 
 # Base `setup()` kwargs without any C-extension registering
 setup_kwargs = dict(
