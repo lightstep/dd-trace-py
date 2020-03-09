@@ -17,14 +17,14 @@ from ddtrace.vendor.lightstep.metrics_pb2 import IngestRequest, MetricKind
 log = logging.getLogger(__name__)
 
 
-LS_PROCESS_CPU_TIME_SYS = "process.cpu.system"
-LS_PROCESS_CPU_TIME_USER = "process.cpu.user"
-LS_PROCESS_MEM_RSS = "process.mem.rss"
+LS_PROCESS_CPU_TIME_SYS = "runtime.python.cpu.system"
+LS_PROCESS_CPU_TIME_USER = "runtime.python.cpu.user"
+LS_PROCESS_MEM_RSS = "runtime.python.mem.rss"
 LS_SYSTEM_CPU_TIME_SYS = "cpu.system"
 LS_SYSTEM_CPU_TIME_USER = "cpu.user"
 LS_SYSTEM_CPU_TIME_IDLE = "cpu.idle"
-LS_SYSTEM_CPU_TIME_STEAL = "cpu.steal"
 LS_SYSTEM_CPU_TIME_NICE = "cpu.nice"
+LS_SYSTEM_CPU_PERCENT = "cpu.percent"
 LS_SYSTEM_MEM_AVAIL = "mem.available"
 LS_SYSTEM_MEM_USED = "mem.used"
 LS_SYSTEM_NET_RECV = "net.recv"
@@ -38,8 +38,8 @@ LS_RUNTIME_METRICS = set(
         LS_SYSTEM_CPU_TIME_SYS,
         LS_SYSTEM_CPU_TIME_USER,
         LS_SYSTEM_CPU_TIME_IDLE,
-        LS_SYSTEM_CPU_TIME_STEAL,
         LS_SYSTEM_CPU_TIME_NICE,
+        LS_SYSTEM_CPU_PERCENT,
         LS_SYSTEM_MEM_AVAIL,
         LS_SYSTEM_MEM_USED,
         LS_SYSTEM_NET_RECV,
@@ -64,6 +64,7 @@ class LightstepPSUtilRuntimeMetricCollector(RuntimeMetricCollector):
         SYSTEM_CPU_USER_TOTAL=0,
         SYSTEM_CPU_IDLE_TOTAL=0,
         SYSTEM_CPU_NICE_TOTAL=0,
+        SYSTEM_CPU_PERCENT=0,
         NET_RECV_TOTAL=0,
         NET_SENT_TOTAL=0,
     )
@@ -72,6 +73,7 @@ class LightstepPSUtilRuntimeMetricCollector(RuntimeMetricCollector):
     def _on_modules_load(self):
         self.proc = self.modules["ddtrace.vendor.psutil"].Process(os.getpid())
         self.cpu = self.modules["ddtrace.vendor.psutil"].cpu_times
+        self.cpu_percent = self.modules["ddtrace.vendor.psutil"].cpu_percent
         self.mem = self.modules["ddtrace.vendor.psutil"].virtual_memory
         self.net = self.modules["ddtrace.vendor.psutil"].net_io_counters
 
@@ -123,6 +125,7 @@ class LightstepPSUtilRuntimeMetricCollector(RuntimeMetricCollector):
                 (LS_SYSTEM_CPU_TIME_USER, system_cpu_user, MetricKind.COUNTER),
                 (LS_SYSTEM_CPU_TIME_IDLE, system_cpu_idle, MetricKind.COUNTER),
                 (LS_SYSTEM_CPU_TIME_NICE, system_cpu_nice, MetricKind.COUNTER),
+                (LS_SYSTEM_CPU_PERCENT, self.cpu_percent(), MetricKind.GAUGE),
                 # system memory metrics
                 (LS_SYSTEM_MEM_AVAIL, system_memory.available, MetricKind.GAUGE),
                 (LS_SYSTEM_MEM_USED, system_memory.used, MetricKind.GAUGE),
@@ -160,15 +163,17 @@ class LightstepMetricsWorker(_worker.PeriodicWorkerThread):
         super(LightstepMetricsWorker, self).__init__(interval=flush_interval, name=self.__class__.__name__)
         self._client = client
         self._runtime_metrics = LightstepRuntimeMetrics()
-        self._reporter = Reporter(tags=[
-            # TODO: pull the component name from the global tags if possible
-            KeyValue(key="lightstep.component_name", string_value=os.getenv("LIGHTSTEP_COMPONENT_NAME")),
-            KeyValue(key="lightstep.hostname", string_value=os.uname()[1]),
-            KeyValue(key="lightstep.reporter_platform", string_value="ls-trace-py"),
-            KeyValue(key="lightstep.reporter_platform_version", string_value=platform.python_version())
-        ])
+        self._reporter = Reporter(
+            tags=[
+                # TODO: pull the component name from the global tags if possible
+                KeyValue(key="lightstep.component_name", string_value=os.getenv("LIGHTSTEP_COMPONENT_NAME")),
+                KeyValue(key="lightstep.hostname", string_value=os.uname()[1]),
+                KeyValue(key="lightstep.reporter_platform", string_value="ls-trace-py"),
+                KeyValue(key="lightstep.reporter_platform_version", string_value=platform.python_version()),
+            ]
+        )
         self._retries = 1
-    
+
     def _ingest_request(self):
         """ Interate through the metrics and create an IngestRequest
         """
@@ -187,7 +192,7 @@ class LightstepMetricsWorker(_worker.PeriodicWorkerThread):
                 key, value, metric_type = metric
             else:
                 key, value = metric
-            point = request.points.add(
+            request.points.add(
                 duration=duration,
                 start=start_time,
                 labels=labels,
@@ -195,7 +200,7 @@ class LightstepMetricsWorker(_worker.PeriodicWorkerThread):
                 double_value=value,
                 kind=metric_type,
             )
-        log.debug("Metrics collected: {}".format(request))
+        log.debug("Metrics collected: %s", request)
         return request
 
     def _generate_idempotency_key(self):
@@ -207,7 +212,7 @@ class LightstepMetricsWorker(_worker.PeriodicWorkerThread):
             self._client.send(ingest_request.SerializeToString())
             self._retries = 1
         except Exception:
-            log.debug("failed request: {}".format(ingest_request.idempotency_key))
+            log.debug("failed request: %s", ingest_request.idempotency_key)
             self._runtime_metrics.rollback()
             self._retries += 1
 
