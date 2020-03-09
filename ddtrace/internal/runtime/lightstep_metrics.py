@@ -14,21 +14,21 @@ from google.protobuf.timestamp_pb2 import Timestamp
 from ddtrace.vendor.lightstep.collector_pb2 import KeyValue, Reporter
 from ddtrace.vendor.lightstep.metrics_pb2 import IngestRequest, MetricKind
 
-log = logging.getLogger(__name__)
+_log = logging.getLogger(__name__)
 
 
-LS_PROCESS_CPU_TIME_SYS = "runtime.python.cpu.system"
+LS_PROCESS_CPU_TIME_SYS = "runtime.python.cpu.sys"
 LS_PROCESS_CPU_TIME_USER = "runtime.python.cpu.user"
 LS_PROCESS_MEM_RSS = "runtime.python.mem.rss"
-LS_SYSTEM_CPU_TIME_SYS = "cpu.system"
+LS_SYSTEM_CPU_TIME_SYS = "cpu.sys"
 LS_SYSTEM_CPU_TIME_USER = "cpu.user"
 LS_SYSTEM_CPU_TIME_IDLE = "cpu.idle"
 LS_SYSTEM_CPU_TIME_NICE = "cpu.nice"
 LS_SYSTEM_CPU_PERCENT = "cpu.percent"
 LS_SYSTEM_MEM_AVAIL = "mem.available"
-LS_SYSTEM_MEM_USED = "mem.used"
-LS_SYSTEM_NET_RECV = "net.recv"
-LS_SYSTEM_NET_SENT = "net.sent"
+LS_SYSTEM_MEM_USED = "mem.total"
+LS_SYSTEM_NET_RECV = "net.bytes_recv"
+LS_SYSTEM_NET_SENT = "net.bytes_sent"
 
 LS_RUNTIME_METRICS = set(
     [
@@ -79,8 +79,6 @@ class LightstepPSUtilRuntimeMetricCollector(RuntimeMetricCollector):
 
     def collect_fn(self, keys):
         with self.proc.oneshot():
-            # only return time deltas
-            # TODO[tahir]: better abstraction for metrics based on last value
             cpu_time_sys_total = self.proc.cpu_times().system
             cpu_time_user_total = self.proc.cpu_times().user
             cpu_time_sys = cpu_time_sys_total - self.stored_value["CPU_TIME_SYS_TOTAL"]
@@ -156,16 +154,17 @@ class LightstepRuntimeMetrics(RuntimeCollectorsIterable):
 class LightstepMetricsWorker(_worker.PeriodicWorkerThread):
     """ Worker thread to collect and write metrics to a Lightstep endpoint """
 
-    FLUSH_INTERVAL = 5
-    KEY_LENGTH = 30
+    _flush_interval = 30
+    _key_length = 30
 
-    def __init__(self, client, flush_interval=FLUSH_INTERVAL):
+    def __init__(self, client, flush_interval=_flush_interval):
         super(LightstepMetricsWorker, self).__init__(interval=flush_interval, name=self.__class__.__name__)
         self._client = client
         self._runtime_metrics = LightstepRuntimeMetrics()
         self._reporter = Reporter(
             tags=[
                 # TODO: pull the component name from the global tags if possible
+                # TODO: pull the service version from global tags
                 KeyValue(key="lightstep.component_name", string_value=os.getenv("LIGHTSTEP_COMPONENT_NAME")),
                 KeyValue(key="lightstep.hostname", string_value=os.uname()[1]),
                 KeyValue(key="lightstep.reporter_platform", string_value="ls-trace-py"),
@@ -185,7 +184,7 @@ class LightstepMetricsWorker(_worker.PeriodicWorkerThread):
             KeyValue(key="lightstep.component_name", string_value=os.getenv("LIGHTSTEP_COMPONENT_NAME")),
         ]
         duration = Duration()
-        duration.FromSeconds(self._retries * self.FLUSH_INTERVAL)
+        duration.FromSeconds(self._retries * self._flush_interval)
         for metric in self._runtime_metrics:
             metric_type = MetricKind.GAUGE
             if len(metric) == 3:
@@ -200,11 +199,11 @@ class LightstepMetricsWorker(_worker.PeriodicWorkerThread):
                 double_value=value,
                 kind=metric_type,
             )
-        log.debug("Metrics collected: %s", request)
+        _log.debug("Metrics collected: %s", request)
         return request
 
     def _generate_idempotency_key(self):
-        return "".join(random.choice(string.ascii_lowercase) for i in range(self.KEY_LENGTH))
+        return "".join(random.choice(string.ascii_lowercase) for i in range(self._key_length))
 
     def flush(self):
         ingest_request = self._ingest_request()
@@ -212,7 +211,7 @@ class LightstepMetricsWorker(_worker.PeriodicWorkerThread):
             self._client.send(ingest_request.SerializeToString())
             self._retries = 1
         except Exception:
-            log.debug("failed request: %s", ingest_request.idempotency_key)
+            _log.debug("failed request: %s", ingest_request.idempotency_key)
             self._runtime_metrics.rollback()
             self._retries += 1
 
