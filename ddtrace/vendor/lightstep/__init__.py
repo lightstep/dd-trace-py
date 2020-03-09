@@ -1,3 +1,3 @@
 from .metrics_reporter import MetricsReporter
 
-all = ["MetricsReporter"]
+__all__ = ["MetricsReporter"]
