@@ -22,9 +22,8 @@ LS_PROCESS_CPU_TIME_USER = "runtime.python.cpu.user"
 LS_PROCESS_MEM_RSS = "runtime.python.mem.rss"
 LS_SYSTEM_CPU_TIME_SYS = "cpu.sys"
 LS_SYSTEM_CPU_TIME_USER = "cpu.user"
-LS_SYSTEM_CPU_TIME_IDLE = "cpu.idle"
-LS_SYSTEM_CPU_TIME_NICE = "cpu.nice"
-LS_SYSTEM_CPU_PERCENT = "cpu.percent"
+LS_SYSTEM_CPU_TIME_TOTAL = "cpu.total"
+LS_SYSTEM_CPU_TIME_USAGE = "cpu.usage"
 LS_SYSTEM_MEM_AVAIL = "mem.available"
 LS_SYSTEM_MEM_USED = "mem.total"
 LS_SYSTEM_NET_RECV = "net.bytes_recv"
@@ -37,15 +36,21 @@ LS_RUNTIME_METRICS = set(
         LS_PROCESS_MEM_RSS,
         LS_SYSTEM_CPU_TIME_SYS,
         LS_SYSTEM_CPU_TIME_USER,
-        LS_SYSTEM_CPU_TIME_IDLE,
-        LS_SYSTEM_CPU_TIME_NICE,
-        LS_SYSTEM_CPU_PERCENT,
+        LS_SYSTEM_CPU_TIME_TOTAL,
+        LS_SYSTEM_CPU_TIME_USAGE,
         LS_SYSTEM_MEM_AVAIL,
         LS_SYSTEM_MEM_USED,
         LS_SYSTEM_NET_RECV,
         LS_SYSTEM_NET_SENT,
     ]
 )
+
+_COMPONENT_NAME_KEY = "lightstep.component_name"
+_SERVICE_VERSION_KEY = "service.version"
+_HOSTNAME_KEY = "lightstep.hostname"
+_REPORTER_PLATFORM_KEY = "lightstep.reporter_platform"
+_REPORTER_PLATFORM_VERSION_KEY = "lightstep.reporter_platform_version"
+_REPORTER_VERSION_KEY = "lightstep.reporter_version"
 
 
 class LightstepPSUtilRuntimeMetricCollector(RuntimeMetricCollector):
@@ -60,11 +65,10 @@ class LightstepPSUtilRuntimeMetricCollector(RuntimeMetricCollector):
     stored_value = dict(
         CPU_TIME_SYS_TOTAL=0,
         CPU_TIME_USER_TOTAL=0,
-        SYSTEM_CPU_TOTAL=0,
+        SYSTEM_CPU_SYS_TOTAL=0,
         SYSTEM_CPU_USER_TOTAL=0,
-        SYSTEM_CPU_IDLE_TOTAL=0,
-        SYSTEM_CPU_NICE_TOTAL=0,
-        SYSTEM_CPU_PERCENT=0,
+        SYSTEM_CPU_TOTAL=0,
+        SYSTEM_CPU_USAGE_TOTAL=0,
         NET_RECV_TOTAL=0,
         NET_SENT_TOTAL=0,
     )
@@ -84,14 +88,15 @@ class LightstepPSUtilRuntimeMetricCollector(RuntimeMetricCollector):
             cpu_time_sys = cpu_time_sys_total - self.stored_value["CPU_TIME_SYS_TOTAL"]
             cpu_time_user = cpu_time_user_total - self.stored_value["CPU_TIME_USER_TOTAL"]
 
-            system_cpu_total = self.cpu().system
+            system_cpu_sys_total = self.cpu().system
             system_cpu_user_total = self.cpu().user
-            system_cpu_idle_total = self.cpu().idle
-            system_cpu_nice_total = self.cpu().nice
-            system_cpu = system_cpu_total - self.stored_value["SYSTEM_CPU_TOTAL"]
+            system_cpu_usage_total = self.cpu().system + self.cpu().user + self.cpu().nice
+            system_cpu_total_total = self.cpu().idle + system_cpu_usage_total
+
+            system_cpu_sys = system_cpu_sys_total - self.stored_value["SYSTEM_CPU_SYS_TOTAL"]
             system_cpu_user = system_cpu_user_total - self.stored_value["SYSTEM_CPU_USER_TOTAL"]
-            system_cpu_idle = system_cpu_idle_total - self.stored_value["SYSTEM_CPU_IDLE_TOTAL"]
-            system_cpu_nice = system_cpu_nice_total - self.stored_value["SYSTEM_CPU_NICE_TOTAL"]
+            system_cpu_usage = system_cpu_usage_total - self.stored_value["SYSTEM_CPU_TOTAL"]
+            system_cpu_total = system_cpu_total_total - self.stored_value["SYSTEM_CPU_USAGE_TOTAL"]
 
             net_recv_total = self.net().bytes_recv
             net_sent_total = self.net().bytes_sent
@@ -105,10 +110,10 @@ class LightstepPSUtilRuntimeMetricCollector(RuntimeMetricCollector):
             self.stored_value = dict(
                 CPU_TIME_SYS_TOTAL=cpu_time_sys_total,
                 CPU_TIME_USER_TOTAL=cpu_time_user_total,
-                SYSTEM_CPU_TOTAL=system_cpu_total,
+                SYSTEM_CPU_SYS_TOTAL=system_cpu_sys_total,
                 SYSTEM_CPU_USER_TOTAL=system_cpu_user_total,
-                SYSTEM_CPU_IDLE_TOTAL=system_cpu_idle_total,
-                SYSTEM_CPU_NICE_TOTAL=system_cpu_nice_total,
+                SYSTEM_CPU_TOTAL=system_cpu_total_total,
+                SYSTEM_CPU_USAGE_TOTAL=system_cpu_usage_total,
                 NET_RECV_TOTAL=net_recv_total,
                 NET_SENT_TOTAL=net_sent_total,
             )
@@ -119,11 +124,10 @@ class LightstepPSUtilRuntimeMetricCollector(RuntimeMetricCollector):
                 (LS_PROCESS_CPU_TIME_USER, cpu_time_user, MetricKind.COUNTER),
                 (LS_PROCESS_MEM_RSS, self.proc.memory_info().rss, MetricKind.GAUGE),
                 # system CPU metrics
-                (LS_SYSTEM_CPU_TIME_SYS, system_cpu, MetricKind.COUNTER),
+                (LS_SYSTEM_CPU_TIME_SYS, system_cpu_sys, MetricKind.COUNTER),
                 (LS_SYSTEM_CPU_TIME_USER, system_cpu_user, MetricKind.COUNTER),
-                (LS_SYSTEM_CPU_TIME_IDLE, system_cpu_idle, MetricKind.COUNTER),
-                (LS_SYSTEM_CPU_TIME_NICE, system_cpu_nice, MetricKind.COUNTER),
-                (LS_SYSTEM_CPU_PERCENT, self.cpu_percent(), MetricKind.GAUGE),
+                (LS_SYSTEM_CPU_TIME_TOTAL, system_cpu_total, MetricKind.COUNTER),
+                (LS_SYSTEM_CPU_TIME_USAGE, system_cpu_usage, MetricKind.COUNTER),
                 # system memory metrics
                 (LS_SYSTEM_MEM_AVAIL, system_memory.available, MetricKind.GAUGE),
                 (LS_SYSTEM_MEM_USED, system_memory.used, MetricKind.GAUGE),
@@ -157,21 +161,33 @@ class LightstepMetricsWorker(_worker.PeriodicWorkerThread):
     _flush_interval = 30
     _key_length = 30
 
-    def __init__(self, client, flush_interval=_flush_interval):
+    def __init__(self, client, flush_interval=_flush_interval, tracer_tags={}):
         super(LightstepMetricsWorker, self).__init__(interval=flush_interval, name=self.__class__.__name__)
+        self._component_name = tracer_tags.get("lightstep.component_name")
+        if not self._component_name:
+            self._component_name = os.getenv("LIGHTSTEP_COMPONENT_NAME", "")
+
+        self._service_version = tracer_tags.get("service.version")
+        if not self._service_version:
+            self._service_version = os.getenv("LIGHTSTEP_SERVICE_VERSION", "")
+
         self._client = client
         self._runtime_metrics = LightstepRuntimeMetrics()
         self._reporter = Reporter(
             tags=[
-                # TODO: pull the component name from the global tags if possible
-                # TODO: pull the service version from global tags
-                KeyValue(key="lightstep.component_name", string_value=os.getenv("LIGHTSTEP_COMPONENT_NAME")),
-                KeyValue(key="lightstep.hostname", string_value=os.uname()[1]),
-                KeyValue(key="lightstep.reporter_platform", string_value="ls-trace-py"),
-                KeyValue(key="lightstep.reporter_platform_version", string_value=platform.python_version()),
+                KeyValue(key=_COMPONENT_NAME_KEY, string_value=self._component_name),
+                KeyValue(key=_SERVICE_VERSION_KEY, string_value=self._service_version),
+                KeyValue(key=_HOSTNAME_KEY, string_value=os.uname()[1]),
+                KeyValue(key=_REPORTER_PLATFORM_KEY, string_value="python"),
+                KeyValue(key=_REPORTER_PLATFORM_VERSION_KEY, string_value=platform.python_version()),
             ]
         )
         self._retries = 1
+        self._labels = [
+            KeyValue(key=_COMPONENT_NAME_KEY, string_value=self._component_name),
+            KeyValue(key=_SERVICE_VERSION_KEY, string_value=self._service_version),
+            KeyValue(key=_HOSTNAME_KEY, string_value=os.uname()[1]),
+        ]
 
     def _ingest_request(self):
         """ Interate through the metrics and create an IngestRequest
@@ -180,9 +196,6 @@ class LightstepMetricsWorker(_worker.PeriodicWorkerThread):
         request.idempotency_key = self._generate_idempotency_key()
         start_time = Timestamp()
         start_time.GetCurrentTime()
-        labels = [
-            KeyValue(key="lightstep.component_name", string_value=os.getenv("LIGHTSTEP_COMPONENT_NAME")),
-        ]
         duration = Duration()
         duration.FromSeconds(self._retries * self._flush_interval)
         for metric in self._runtime_metrics:
@@ -194,7 +207,7 @@ class LightstepMetricsWorker(_worker.PeriodicWorkerThread):
             request.points.add(
                 duration=duration,
                 start=start_time,
-                labels=labels,
+                labels=self._labels,
                 metric_name=key,
                 double_value=value,
                 kind=metric_type,
