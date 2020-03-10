@@ -65,9 +65,9 @@ def update_patched_modules():
         EXTRA_PATCHED_MODULES.update({module: should_patch.lower() == "true"})
 
 
-def add_global_tags(tracer):
+def add_global_tags(tracer, global_tags):
     tags = {}
-    for tag in os.environ.get("DD_TRACE_GLOBAL_TAGS", "").split(","):
+    for tag in global_tags.split(","):
         tag_name, _, tag_value = tag.partition(":")
         if not tag_name or not tag_value:
             log.debug("skipping malformed tracer tag")
@@ -122,7 +122,10 @@ try:
         tracer.set_tags({constants.ENV_KEY: os.environ["DATADOG_ENV"]})
 
     if "DD_TRACE_GLOBAL_TAGS" in os.environ:
-        add_global_tags(tracer)
+        add_global_tags(tracer, os.getenv("DD_TRACE_GLOBAL_TAGS"))
+
+    if "LIGHTSTEP_TAGS" in os.environ:
+        add_global_tags(tracer, os.getenv("LIGHTSTEP_TAGS"))
 
     # Ensure sitecustomize.py is properly called if available in application directories:
     # * exclude `bootstrap_dir` from the search

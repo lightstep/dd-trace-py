@@ -424,7 +424,11 @@ class Tracer(object):
         if environ.get("DD_METRICS_RUNTIME", LightstepMetricsWorker) == "RuntimeWorker":
             self._runtime_worker = RuntimeWorker(self._dogstatsd_client, self._RUNTIME_METRICS_INTERVAL)
         else:
-            self._runtime_worker = LightstepMetricsWorker(MetricsReporter(), self._RUNTIME_METRICS_INTERVAL)
+            self._runtime_worker = LightstepMetricsWorker(
+                MetricsReporter(),
+                self._RUNTIME_METRICS_INTERVAL,
+                tracer_tags=self.tags,
+            )
         self._runtime_worker.start()
 
     def _check_new_process(self):
