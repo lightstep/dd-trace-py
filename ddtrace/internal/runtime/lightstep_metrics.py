@@ -77,9 +77,21 @@ class LightstepPSUtilRuntimeMetricCollector(RuntimeMetricCollector):
     def _on_modules_load(self):
         self.proc = self.modules["ddtrace.vendor.psutil"].Process(os.getpid())
         self.cpu = self.modules["ddtrace.vendor.psutil"].cpu_times
-        self.cpu_percent = self.modules["ddtrace.vendor.psutil"].cpu_percent
         self.mem = self.modules["ddtrace.vendor.psutil"].virtual_memory
         self.net = self.modules["ddtrace.vendor.psutil"].net_io_counters
+    
+    def _usage(self):
+        cpu_times = self.cpu()
+        usage = cpu_times.user + cpu_times.system
+        metrics = [
+            "nice", "iowait", "irq"
+            "softirq", "steal",
+        ]
+        for m in metrics:
+            if hasattr(cpu_times, m):
+                usage += getattr(cpu_times, m)
+
+        return usage
 
     def collect_fn(self, keys):
         with self.proc.oneshot():
@@ -90,7 +102,7 @@ class LightstepPSUtilRuntimeMetricCollector(RuntimeMetricCollector):
 
             system_cpu_sys_total = self.cpu().system
             system_cpu_user_total = self.cpu().user
-            system_cpu_usage_total = self.cpu().system + self.cpu().user + self.cpu().nice
+            system_cpu_usage_total = self._usage()
             system_cpu_total_total = self.cpu().idle + system_cpu_usage_total
 
             system_cpu_sys = system_cpu_sys_total - self.stored_value["SYSTEM_CPU_SYS_TOTAL"]
