@@ -12,6 +12,7 @@ from .runtime_metrics import RuntimeCollectorsIterable
 from google.protobuf.duration_pb2 import Duration
 from google.protobuf.timestamp_pb2 import Timestamp
 from ddtrace.vendor.lightstep.collector_pb2 import KeyValue, Reporter
+from ddtrace.vendor.lightstep.constants import COMPONENT_NAME, SERVICE_VERSION
 from ddtrace.vendor.lightstep.metrics_pb2 import IngestRequest, MetricKind
 
 _log = logging.getLogger(__name__)
@@ -45,8 +46,6 @@ LS_RUNTIME_METRICS = set(
     ]
 )
 
-_COMPONENT_NAME_KEY = "lightstep.component_name"
-_SERVICE_VERSION_KEY = "service.version"
 _HOSTNAME_KEY = "lightstep.hostname"
 _REPORTER_PLATFORM_KEY = "lightstep.reporter_platform"
 _REPORTER_PLATFORM_VERSION_KEY = "lightstep.reporter_platform_version"
@@ -79,13 +78,15 @@ class LightstepPSUtilRuntimeMetricCollector(RuntimeMetricCollector):
         self.cpu = self.modules["ddtrace.vendor.psutil"].cpu_times
         self.mem = self.modules["ddtrace.vendor.psutil"].virtual_memory
         self.net = self.modules["ddtrace.vendor.psutil"].net_io_counters
-    
+
     def _usage(self):
         cpu_times = self.cpu()
         usage = cpu_times.user + cpu_times.system
         metrics = [
-            "nice", "iowait", "irq"
-            "softirq", "steal",
+            "nice",
+            "iowait",
+            "irq" "softirq",
+            "steal",
         ]
         for m in metrics:
             if hasattr(cpu_times, m):
@@ -176,19 +177,14 @@ class LightstepMetricsWorker(_worker.PeriodicWorkerThread):
     def __init__(self, client, flush_interval=_flush_interval, tracer_tags={}):
         super(LightstepMetricsWorker, self).__init__(interval=flush_interval, name=self.__class__.__name__)
         self._component_name = tracer_tags.get("lightstep.component_name")
-        if not self._component_name:
-            self._component_name = os.getenv("LIGHTSTEP_COMPONENT_NAME", "")
-
         self._service_version = tracer_tags.get("service.version")
-        if not self._service_version:
-            self._service_version = os.getenv("LIGHTSTEP_SERVICE_VERSION", "")
 
         self._client = client
         self._runtime_metrics = LightstepRuntimeMetrics()
         self._reporter = Reporter(
             tags=[
-                KeyValue(key=_COMPONENT_NAME_KEY, string_value=self._component_name),
-                KeyValue(key=_SERVICE_VERSION_KEY, string_value=self._service_version),
+                KeyValue(key=COMPONENT_NAME, string_value=self._component_name),
+                KeyValue(key=SERVICE_VERSION, string_value=self._service_version),
                 KeyValue(key=_HOSTNAME_KEY, string_value=os.uname()[1]),
                 KeyValue(key=_REPORTER_PLATFORM_KEY, string_value="python"),
                 KeyValue(key=_REPORTER_PLATFORM_VERSION_KEY, string_value=platform.python_version()),
@@ -196,8 +192,8 @@ class LightstepMetricsWorker(_worker.PeriodicWorkerThread):
         )
         self._retries = 1
         self._labels = [
-            KeyValue(key=_COMPONENT_NAME_KEY, string_value=self._component_name),
-            KeyValue(key=_SERVICE_VERSION_KEY, string_value=self._service_version),
+            KeyValue(key=COMPONENT_NAME, string_value=self._component_name),
+            KeyValue(key=SERVICE_VERSION, string_value=self._service_version),
             KeyValue(key=_HOSTNAME_KEY, string_value=os.uname()[1]),
         ]
 

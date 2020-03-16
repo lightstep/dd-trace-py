@@ -20,6 +20,7 @@ from .utils.formats import get_env
 from .utils.deprecation import deprecated, RemovedInDDTrace10Warning
 from .vendor.dogstatsd import DogStatsd
 from .vendor.lightstep import MetricsReporter
+from .vendor.lightstep.constants import ACCESS_TOKEN
 from . import compat
 
 
@@ -425,7 +426,7 @@ class Tracer(object):
             self._runtime_worker = RuntimeWorker(self._dogstatsd_client, self._RUNTIME_METRICS_INTERVAL)
         else:
             self._runtime_worker = LightstepMetricsWorker(
-                MetricsReporter(),
+                MetricsReporter(token=self.tags.get(ACCESS_TOKEN)),
                 self._RUNTIME_METRICS_INTERVAL,
                 tracer_tags=self.tags,
             )
