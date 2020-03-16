@@ -12,6 +12,7 @@ from .runtime_metrics import RuntimeCollectorsIterable
 from google.protobuf.duration_pb2 import Duration
 from google.protobuf.timestamp_pb2 import Timestamp
 from ddtrace.vendor.lightstep.collector_pb2 import KeyValue, Reporter
+from ddtrace.vendor.lightstep.constants import COMPONENT_NAME, SERVICE_VERSION
 from ddtrace.vendor.lightstep.metrics_pb2 import IngestRequest, MetricKind
 
 _log = logging.getLogger(__name__)
@@ -45,8 +46,6 @@ LS_RUNTIME_METRICS = set(
     ]
 )
 
-_COMPONENT_NAME_KEY = "lightstep.component_name"
-_SERVICE_VERSION_KEY = "service.version"
 _HOSTNAME_KEY = "lightstep.hostname"
 _REPORTER_PLATFORM_KEY = "lightstep.reporter_platform"
 _REPORTER_PLATFORM_VERSION_KEY = "lightstep.reporter_platform_version"
@@ -73,19 +72,22 @@ class LightstepPSUtilRuntimeMetricCollector(RuntimeMetricCollector):
         NET_SENT_TOTAL=0,
     )
     previous_value = dict()
+    _skipped_first = False
 
     def _on_modules_load(self):
         self.proc = self.modules["ddtrace.vendor.psutil"].Process(os.getpid())
         self.cpu = self.modules["ddtrace.vendor.psutil"].cpu_times
         self.mem = self.modules["ddtrace.vendor.psutil"].virtual_memory
         self.net = self.modules["ddtrace.vendor.psutil"].net_io_counters
-    
+
     def _usage(self):
         cpu_times = self.cpu()
         usage = cpu_times.user + cpu_times.system
         metrics = [
-            "nice", "iowait", "irq"
-            "softirq", "steal",
+            "nice",
+            "iowait",
+            "irq" "softirq",
+            "steal",
         ]
         for m in metrics:
             if hasattr(cpu_times, m):
@@ -93,61 +95,67 @@ class LightstepPSUtilRuntimeMetricCollector(RuntimeMetricCollector):
 
         return usage
 
+    def _measure(self):
+        cpu_time_sys_total = self.proc.cpu_times().system
+        cpu_time_user_total = self.proc.cpu_times().user
+        cpu_time_sys = cpu_time_sys_total - self.stored_value["CPU_TIME_SYS_TOTAL"]
+        cpu_time_user = cpu_time_user_total - self.stored_value["CPU_TIME_USER_TOTAL"]
+
+        system_cpu_sys_total = self.cpu().system
+        system_cpu_user_total = self.cpu().user
+        system_cpu_usage_total = self._usage()
+        system_cpu_total_total = self.cpu().idle + system_cpu_usage_total
+
+        system_cpu_sys = system_cpu_sys_total - self.stored_value["SYSTEM_CPU_SYS_TOTAL"]
+        system_cpu_user = system_cpu_user_total - self.stored_value["SYSTEM_CPU_USER_TOTAL"]
+        system_cpu_usage = system_cpu_usage_total - self.stored_value["SYSTEM_CPU_USAGE_TOTAL"]
+        system_cpu_total = system_cpu_total_total - self.stored_value["SYSTEM_CPU_TOTAL"]
+
+        net_recv_total = self.net().bytes_recv
+        net_sent_total = self.net().bytes_sent
+        net_recv = net_recv_total - self.stored_value["NET_RECV_TOTAL"]
+        net_sent = net_sent_total - self.stored_value["NET_SENT_TOTAL"]
+
+        system_memory = self.mem()
+
+        self.previous_value = self.stored_value
+
+        self.stored_value = dict(
+            CPU_TIME_SYS_TOTAL=cpu_time_sys_total,
+            CPU_TIME_USER_TOTAL=cpu_time_user_total,
+            SYSTEM_CPU_SYS_TOTAL=system_cpu_sys_total,
+            SYSTEM_CPU_USER_TOTAL=system_cpu_user_total,
+            SYSTEM_CPU_TOTAL=system_cpu_total_total,
+            SYSTEM_CPU_USAGE_TOTAL=system_cpu_usage_total,
+            NET_RECV_TOTAL=net_recv_total,
+            NET_SENT_TOTAL=net_sent_total,
+        )
+
+        return [
+            # process metrics
+            (LS_PROCESS_CPU_TIME_SYS, cpu_time_sys, MetricKind.COUNTER),
+            (LS_PROCESS_CPU_TIME_USER, cpu_time_user, MetricKind.COUNTER),
+            (LS_PROCESS_MEM_RSS, self.proc.memory_info().rss, MetricKind.GAUGE),
+            # system CPU metrics
+            (LS_SYSTEM_CPU_TIME_SYS, system_cpu_sys, MetricKind.COUNTER),
+            (LS_SYSTEM_CPU_TIME_USER, system_cpu_user, MetricKind.COUNTER),
+            (LS_SYSTEM_CPU_TIME_TOTAL, system_cpu_total, MetricKind.COUNTER),
+            (LS_SYSTEM_CPU_TIME_USAGE, system_cpu_usage, MetricKind.COUNTER),
+            # system memory metrics
+            (LS_SYSTEM_MEM_AVAIL, system_memory.available, MetricKind.GAUGE),
+            (LS_SYSTEM_MEM_USED, system_memory.used, MetricKind.GAUGE),
+            # system network metrics
+            (LS_SYSTEM_NET_RECV, net_recv, MetricKind.COUNTER),
+            (LS_SYSTEM_NET_SENT, net_sent, MetricKind.COUNTER),
+        ]
+
     def collect_fn(self, keys):
         with self.proc.oneshot():
-            cpu_time_sys_total = self.proc.cpu_times().system
-            cpu_time_user_total = self.proc.cpu_times().user
-            cpu_time_sys = cpu_time_sys_total - self.stored_value["CPU_TIME_SYS_TOTAL"]
-            cpu_time_user = cpu_time_user_total - self.stored_value["CPU_TIME_USER_TOTAL"]
-
-            system_cpu_sys_total = self.cpu().system
-            system_cpu_user_total = self.cpu().user
-            system_cpu_usage_total = self._usage()
-            system_cpu_total_total = self.cpu().idle + system_cpu_usage_total
-
-            system_cpu_sys = system_cpu_sys_total - self.stored_value["SYSTEM_CPU_SYS_TOTAL"]
-            system_cpu_user = system_cpu_user_total - self.stored_value["SYSTEM_CPU_USER_TOTAL"]
-            system_cpu_usage = system_cpu_usage_total - self.stored_value["SYSTEM_CPU_TOTAL"]
-            system_cpu_total = system_cpu_total_total - self.stored_value["SYSTEM_CPU_USAGE_TOTAL"]
-
-            net_recv_total = self.net().bytes_recv
-            net_sent_total = self.net().bytes_sent
-            net_recv = net_recv_total - self.stored_value["NET_RECV_TOTAL"]
-            net_sent = net_sent_total - self.stored_value["NET_SENT_TOTAL"]
-
-            system_memory = self.mem()
-
-            self.previous_value = self.stored_value
-
-            self.stored_value = dict(
-                CPU_TIME_SYS_TOTAL=cpu_time_sys_total,
-                CPU_TIME_USER_TOTAL=cpu_time_user_total,
-                SYSTEM_CPU_SYS_TOTAL=system_cpu_sys_total,
-                SYSTEM_CPU_USER_TOTAL=system_cpu_user_total,
-                SYSTEM_CPU_TOTAL=system_cpu_total_total,
-                SYSTEM_CPU_USAGE_TOTAL=system_cpu_usage_total,
-                NET_RECV_TOTAL=net_recv_total,
-                NET_SENT_TOTAL=net_sent_total,
-            )
-
-            metrics = [
-                # process metrics
-                (LS_PROCESS_CPU_TIME_SYS, cpu_time_sys, MetricKind.COUNTER),
-                (LS_PROCESS_CPU_TIME_USER, cpu_time_user, MetricKind.COUNTER),
-                (LS_PROCESS_MEM_RSS, self.proc.memory_info().rss, MetricKind.GAUGE),
-                # system CPU metrics
-                (LS_SYSTEM_CPU_TIME_SYS, system_cpu_sys, MetricKind.COUNTER),
-                (LS_SYSTEM_CPU_TIME_USER, system_cpu_user, MetricKind.COUNTER),
-                (LS_SYSTEM_CPU_TIME_TOTAL, system_cpu_total, MetricKind.COUNTER),
-                (LS_SYSTEM_CPU_TIME_USAGE, system_cpu_usage, MetricKind.COUNTER),
-                # system memory metrics
-                (LS_SYSTEM_MEM_AVAIL, system_memory.available, MetricKind.GAUGE),
-                (LS_SYSTEM_MEM_USED, system_memory.used, MetricKind.GAUGE),
-                # system network metrics
-                (LS_SYSTEM_NET_RECV, net_recv, MetricKind.COUNTER),
-                (LS_SYSTEM_NET_SENT, net_sent, MetricKind.COUNTER),
-            ]
-
+            metrics = self._measure()
+            if not self._skipped_first:
+                # intentionally skip the initial set of metrics
+                self._skipped_first = True
+                metrics = self._measure()
             return metrics
 
     def rollback(self):
@@ -176,19 +184,14 @@ class LightstepMetricsWorker(_worker.PeriodicWorkerThread):
     def __init__(self, client, flush_interval=_flush_interval, tracer_tags={}):
         super(LightstepMetricsWorker, self).__init__(interval=flush_interval, name=self.__class__.__name__)
         self._component_name = tracer_tags.get("lightstep.component_name")
-        if not self._component_name:
-            self._component_name = os.getenv("LIGHTSTEP_COMPONENT_NAME", "")
-
         self._service_version = tracer_tags.get("service.version")
-        if not self._service_version:
-            self._service_version = os.getenv("LIGHTSTEP_SERVICE_VERSION", "")
 
         self._client = client
         self._runtime_metrics = LightstepRuntimeMetrics()
         self._reporter = Reporter(
             tags=[
-                KeyValue(key=_COMPONENT_NAME_KEY, string_value=self._component_name),
-                KeyValue(key=_SERVICE_VERSION_KEY, string_value=self._service_version),
+                KeyValue(key=COMPONENT_NAME, string_value=self._component_name),
+                KeyValue(key=SERVICE_VERSION, string_value=self._service_version),
                 KeyValue(key=_HOSTNAME_KEY, string_value=os.uname()[1]),
                 KeyValue(key=_REPORTER_PLATFORM_KEY, string_value="python"),
                 KeyValue(key=_REPORTER_PLATFORM_VERSION_KEY, string_value=platform.python_version()),
@@ -196,8 +199,8 @@ class LightstepMetricsWorker(_worker.PeriodicWorkerThread):
         )
         self._retries = 1
         self._labels = [
-            KeyValue(key=_COMPONENT_NAME_KEY, string_value=self._component_name),
-            KeyValue(key=_SERVICE_VERSION_KEY, string_value=self._service_version),
+            KeyValue(key=COMPONENT_NAME, string_value=self._component_name),
+            KeyValue(key=SERVICE_VERSION, string_value=self._service_version),
             KeyValue(key=_HOSTNAME_KEY, string_value=os.uname()[1]),
         ]
 

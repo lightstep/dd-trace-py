@@ -11,6 +11,14 @@ import logging
 from ddtrace.utils.formats import asbool, get_env
 from ddtrace.internal.logger import get_logger
 from ddtrace import config, constants
+from ddtrace.vendor.lightstep.constants import (
+    ACCESS_TOKEN,
+    ACCESS_TOKEN_ENV_VAR,
+    COMPONENT_NAME,
+    COMPONENT_NAME_ENV_VAR,
+    SERVICE_VERSION,
+    SERVICE_VERSION_ENV_VAR,
+)
 
 DD_LOG_FORMAT = "%(asctime)s %(levelname)s [%(name)s] [%(filename)s:%(lineno)d] {}- %(message)s".format(
     "[dd.trace_id=%(dd.trace_id)s dd.span_id=%(dd.span_id)s] " if config.logs_injection else ""
@@ -64,6 +72,22 @@ def update_patched_modules():
         EXTRA_PATCHED_MODULES.update({module: should_patch.lower() == "true"})
 
 
+_LIGHTSTEP_ENV_VARS = {
+    ACCESS_TOKEN_ENV_VAR: ACCESS_TOKEN,
+    SERVICE_VERSION_ENV_VAR: SERVICE_VERSION,
+    COMPONENT_NAME_ENV_VAR: COMPONENT_NAME,
+}
+
+
+def add_lightstep_tags(tracer, env):
+    tags = {}
+    for k, var in _LIGHTSTEP_ENV_VARS.items():
+        if k in env:
+            tags[var] = env[k]
+    if len(tags) > 0:
+        tracer.set_tags(tags)
+
+
 def add_global_tags(tracer, global_tags):
     tags = {}
     for tag in global_tags.split(","):
@@ -105,6 +129,8 @@ try:
     if asbool(os.environ.get("LIGHTSTEP_METRICS_DISABLE")):
         opts["collect_metrics"] = False
 
+    add_lightstep_tags(tracer, os.environ)
+
     if opts:
         tracer.configure(**opts)
 
@@ -119,9 +145,6 @@ try:
 
     if "DD_TRACE_GLOBAL_TAGS" in os.environ:
         add_global_tags(tracer, os.getenv("DD_TRACE_GLOBAL_TAGS"))
-
-    if "LIGHTSTEP_TAGS" in os.environ:
-        add_global_tags(tracer, os.getenv("LIGHTSTEP_TAGS"))
 
     # Ensure sitecustomize.py is properly called if available in application directories:
     # * exclude `bootstrap_dir` from the search

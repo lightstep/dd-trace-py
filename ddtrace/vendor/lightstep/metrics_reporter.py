@@ -2,11 +2,13 @@ from os import environ
 
 import backoff
 
+from .constants import ACCESS_TOKEN_ENV_VAR
+
 DEFAULT_METRICS_HOSTNAME = environ.get("LIGHTSTEP_METRICS_HOST", environ.get("LIGHTSTEP_HOST", "ingest.lightstep.com"))
 DEFAULT_METRICS_PORT = environ.get("LIGHTSTEP_METRICS_PORT", environ.get("LIGHTSTEP_PORT", "443"))
 DEFAULT_METRICS_SECURE = environ.get("LIGHTSTEP_METRICS_SECURE", environ.get("LIGHTSTEP_SECURE", "1"))
 DEFAULT_METRICS_PATH = "/metrics"
-TOKEN = environ.get("LIGHTSTEP_ACCESS_TOKEN", "INVALID_TOKEN")
+TOKEN = environ.get(ACCESS_TOKEN_ENV_VAR, "INVALID_TOKEN")
 
 DEFAULT_ACCEPT = "application/octet-stream"
 DEFAULT_CONTENT_TYPE = "application/octet-stream"
@@ -39,4 +41,5 @@ class MetricsReporter:
         protocol = "https" if int(self._secure) else "http"
         url = "{}://{}:{}{}".format(protocol, self._host, self._port, self._path)
         import requests
+
         return requests.post(url, headers=headers, data=content)
