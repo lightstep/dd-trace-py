@@ -11,7 +11,14 @@ import logging
 from ddtrace.utils.formats import asbool, get_env
 from ddtrace.internal.logger import get_logger
 from ddtrace import constants
-from ddtrace.vendor.lightstep import constants
+from ddtrace.vendor.lightstep.constants import (
+    ACCESS_TOKEN,
+    ACCESS_TOKEN_ENV_VAR,
+    COMPONENT_NAME,
+    COMPONENT_NAME_ENV_VAR,
+    SERVICE_VERSION,
+    SERVICE_VERSION_ENV_VAR,
+)
 
 logs_injection = asbool(get_env("logs", "injection"))
 DD_LOG_FORMAT = "%(asctime)s %(levelname)s [%(name)s] [%(filename)s:%(lineno)d] {}- %(message)s".format(
@@ -67,9 +74,9 @@ def update_patched_modules():
 
 
 _LIGHTSTEP_ENV_VARS = {
-    constants.ACCESS_TOKEN_ENV_VAR: constants.ACCESS_TOKEN,
-    constants.SERVICE_VERSION_ENV_VAR: constants.SERVICE_VERSION,
-    constants.COMPONENT_NAME_ENV_VAR: constants.COMPONENT_NAME,
+    ACCESS_TOKEN_ENV_VAR: ACCESS_TOKEN,
+    SERVICE_VERSION_ENV_VAR: SERVICE_VERSION,
+    COMPONENT_NAME_ENV_VAR: COMPONENT_NAME,
 }
 
 
