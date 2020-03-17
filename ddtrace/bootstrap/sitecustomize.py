@@ -8,7 +8,7 @@ import imp
 import sys
 import logging
 
-from ddtrace.utils.formats import asbool, get_env
+from ddtrace.utils.formats import asbool
 from ddtrace.internal.logger import get_logger
 from ddtrace import config, constants
 from ddtrace.vendor.lightstep.constants import (
@@ -125,9 +125,7 @@ try:
     if priority_sampling:
         opts["priority_sampling"] = asbool(priority_sampling)
 
-    opts["collect_metrics"] = True
-    if asbool(os.environ.get("LIGHTSTEP_METRICS_DISABLE")):
-        opts["collect_metrics"] = False
+    opts["collect_metrics"] = not asbool(os.environ.get("LIGHTSTEP_METRICS_DISABLE"))
 
     add_lightstep_tags(tracer, os.environ)
 
