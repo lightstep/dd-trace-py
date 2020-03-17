@@ -72,6 +72,7 @@ class LightstepPSUtilRuntimeMetricCollector(RuntimeMetricCollector):
         NET_SENT_TOTAL=0,
     )
     previous_value = dict()
+    _skipped_first = False
 
     def _on_modules_load(self):
         self.proc = self.modules["ddtrace.vendor.psutil"].Process(os.getpid())
@@ -94,61 +95,67 @@ class LightstepPSUtilRuntimeMetricCollector(RuntimeMetricCollector):
 
         return usage
 
+    def _measure(self):
+        cpu_time_sys_total = self.proc.cpu_times().system
+        cpu_time_user_total = self.proc.cpu_times().user
+        cpu_time_sys = cpu_time_sys_total - self.stored_value["CPU_TIME_SYS_TOTAL"]
+        cpu_time_user = cpu_time_user_total - self.stored_value["CPU_TIME_USER_TOTAL"]
+
+        system_cpu_sys_total = self.cpu().system
+        system_cpu_user_total = self.cpu().user
+        system_cpu_usage_total = self._usage()
+        system_cpu_total_total = self.cpu().idle + system_cpu_usage_total
+
+        system_cpu_sys = system_cpu_sys_total - self.stored_value["SYSTEM_CPU_SYS_TOTAL"]
+        system_cpu_user = system_cpu_user_total - self.stored_value["SYSTEM_CPU_USER_TOTAL"]
+        system_cpu_usage = system_cpu_usage_total - self.stored_value["SYSTEM_CPU_TOTAL"]
+        system_cpu_total = system_cpu_total_total - self.stored_value["SYSTEM_CPU_USAGE_TOTAL"]
+
+        net_recv_total = self.net().bytes_recv
+        net_sent_total = self.net().bytes_sent
+        net_recv = net_recv_total - self.stored_value["NET_RECV_TOTAL"]
+        net_sent = net_sent_total - self.stored_value["NET_SENT_TOTAL"]
+
+        system_memory = self.mem()
+
+        self.previous_value = self.stored_value
+
+        self.stored_value = dict(
+            CPU_TIME_SYS_TOTAL=cpu_time_sys_total,
+            CPU_TIME_USER_TOTAL=cpu_time_user_total,
+            SYSTEM_CPU_SYS_TOTAL=system_cpu_sys_total,
+            SYSTEM_CPU_USER_TOTAL=system_cpu_user_total,
+            SYSTEM_CPU_TOTAL=system_cpu_total_total,
+            SYSTEM_CPU_USAGE_TOTAL=system_cpu_usage_total,
+            NET_RECV_TOTAL=net_recv_total,
+            NET_SENT_TOTAL=net_sent_total,
+        )
+
+        return [
+            # process metrics
+            (LS_PROCESS_CPU_TIME_SYS, cpu_time_sys, MetricKind.COUNTER),
+            (LS_PROCESS_CPU_TIME_USER, cpu_time_user, MetricKind.COUNTER),
+            (LS_PROCESS_MEM_RSS, self.proc.memory_info().rss, MetricKind.GAUGE),
+            # system CPU metrics
+            (LS_SYSTEM_CPU_TIME_SYS, system_cpu_sys, MetricKind.COUNTER),
+            (LS_SYSTEM_CPU_TIME_USER, system_cpu_user, MetricKind.COUNTER),
+            (LS_SYSTEM_CPU_TIME_TOTAL, system_cpu_total, MetricKind.COUNTER),
+            (LS_SYSTEM_CPU_TIME_USAGE, system_cpu_usage, MetricKind.COUNTER),
+            # system memory metrics
+            (LS_SYSTEM_MEM_AVAIL, system_memory.available, MetricKind.GAUGE),
+            (LS_SYSTEM_MEM_USED, system_memory.used, MetricKind.GAUGE),
+            # system network metrics
+            (LS_SYSTEM_NET_RECV, net_recv, MetricKind.COUNTER),
+            (LS_SYSTEM_NET_SENT, net_sent, MetricKind.COUNTER),
+        ]
+
     def collect_fn(self, keys):
         with self.proc.oneshot():
-            cpu_time_sys_total = self.proc.cpu_times().system
-            cpu_time_user_total = self.proc.cpu_times().user
-            cpu_time_sys = cpu_time_sys_total - self.stored_value["CPU_TIME_SYS_TOTAL"]
-            cpu_time_user = cpu_time_user_total - self.stored_value["CPU_TIME_USER_TOTAL"]
-
-            system_cpu_sys_total = self.cpu().system
-            system_cpu_user_total = self.cpu().user
-            system_cpu_usage_total = self._usage()
-            system_cpu_total_total = self.cpu().idle + system_cpu_usage_total
-
-            system_cpu_sys = system_cpu_sys_total - self.stored_value["SYSTEM_CPU_SYS_TOTAL"]
-            system_cpu_user = system_cpu_user_total - self.stored_value["SYSTEM_CPU_USER_TOTAL"]
-            system_cpu_usage = system_cpu_usage_total - self.stored_value["SYSTEM_CPU_TOTAL"]
-            system_cpu_total = system_cpu_total_total - self.stored_value["SYSTEM_CPU_USAGE_TOTAL"]
-
-            net_recv_total = self.net().bytes_recv
-            net_sent_total = self.net().bytes_sent
-            net_recv = net_recv_total - self.stored_value["NET_RECV_TOTAL"]
-            net_sent = net_sent_total - self.stored_value["NET_SENT_TOTAL"]
-
-            system_memory = self.mem()
-
-            self.previous_value = self.stored_value
-
-            self.stored_value = dict(
-                CPU_TIME_SYS_TOTAL=cpu_time_sys_total,
-                CPU_TIME_USER_TOTAL=cpu_time_user_total,
-                SYSTEM_CPU_SYS_TOTAL=system_cpu_sys_total,
-                SYSTEM_CPU_USER_TOTAL=system_cpu_user_total,
-                SYSTEM_CPU_TOTAL=system_cpu_total_total,
-                SYSTEM_CPU_USAGE_TOTAL=system_cpu_usage_total,
-                NET_RECV_TOTAL=net_recv_total,
-                NET_SENT_TOTAL=net_sent_total,
-            )
-
-            metrics = [
-                # process metrics
-                (LS_PROCESS_CPU_TIME_SYS, cpu_time_sys, MetricKind.COUNTER),
-                (LS_PROCESS_CPU_TIME_USER, cpu_time_user, MetricKind.COUNTER),
-                (LS_PROCESS_MEM_RSS, self.proc.memory_info().rss, MetricKind.GAUGE),
-                # system CPU metrics
-                (LS_SYSTEM_CPU_TIME_SYS, system_cpu_sys, MetricKind.COUNTER),
-                (LS_SYSTEM_CPU_TIME_USER, system_cpu_user, MetricKind.COUNTER),
-                (LS_SYSTEM_CPU_TIME_TOTAL, system_cpu_total, MetricKind.COUNTER),
-                (LS_SYSTEM_CPU_TIME_USAGE, system_cpu_usage, MetricKind.COUNTER),
-                # system memory metrics
-                (LS_SYSTEM_MEM_AVAIL, system_memory.available, MetricKind.GAUGE),
-                (LS_SYSTEM_MEM_USED, system_memory.used, MetricKind.GAUGE),
-                # system network metrics
-                (LS_SYSTEM_NET_RECV, net_recv, MetricKind.COUNTER),
-                (LS_SYSTEM_NET_SENT, net_sent, MetricKind.COUNTER),
-            ]
-
+            metrics = self._measure()
+            if not self._skipped_first:
+                # intentionally skip the initial set of metrics
+                self._skipped_first = True
+                metrics = self._measure()
             return metrics
 
     def rollback(self):
