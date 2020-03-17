@@ -427,7 +427,6 @@ class Tracer(object):
         else:
             self._runtime_worker = LightstepMetricsWorker(
                 MetricsReporter(token=self.tags.get(ACCESS_TOKEN)),
-                self._RUNTIME_METRICS_INTERVAL,
                 tracer_tags=self.tags,
             )
         self._runtime_worker.start()
