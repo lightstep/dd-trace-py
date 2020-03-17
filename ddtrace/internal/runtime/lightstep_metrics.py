@@ -108,8 +108,8 @@ class LightstepPSUtilRuntimeMetricCollector(RuntimeMetricCollector):
 
         system_cpu_sys = system_cpu_sys_total - self.stored_value["SYSTEM_CPU_SYS_TOTAL"]
         system_cpu_user = system_cpu_user_total - self.stored_value["SYSTEM_CPU_USER_TOTAL"]
-        system_cpu_usage = system_cpu_usage_total - self.stored_value["SYSTEM_CPU_TOTAL"]
-        system_cpu_total = system_cpu_total_total - self.stored_value["SYSTEM_CPU_USAGE_TOTAL"]
+        system_cpu_usage = system_cpu_usage_total - self.stored_value["SYSTEM_CPU_USAGE_TOTAL"]
+        system_cpu_total = system_cpu_total_total - self.stored_value["SYSTEM_CPU_TOTAL"]
 
         net_recv_total = self.net().bytes_recv
         net_sent_total = self.net().bytes_sent
