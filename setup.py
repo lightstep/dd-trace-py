@@ -55,33 +55,6 @@ def get_version(package):
     return re.search("__version__ = ['\"]([^'\"]+)['\"]", init_py).group(1)
 
 
-def load_module_from_project_file(mod_name, fname):
-    """
-    Helper used to load a module from a file in this project
-
-    DEV: Loading this way will by-pass loading all parent modules
-         e.g. importing `ddtrace.vendor.psutil.setup` will load `ddtrace/__init__.py`
-         which has side effects like loading the tracer
-    """
-    fpath = os.path.join(HERE, fname)
-
-    if sys.version_info >= (3, 5):
-        import importlib.util
-
-        spec = importlib.util.spec_from_file_location(mod_name, fpath)
-        mod = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(mod)
-        return mod
-    elif sys.version_info >= (3, 3):
-        from importlib.machinery import SourceFileLoader
-
-        return SourceFileLoader(mod_name, fpath).load_module()
-    else:
-        import imp
-
-        return imp.load_source(mod_name, fpath)
-
-
 class Tox(TestCommand):
 
     user_options = [("tox-args=", "a", "Arguments to pass to tox")]

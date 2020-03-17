@@ -1,7 +1,5 @@
 import sys
 
-import pkg_resources
-
 # Always import and patch import hooks before loading anything else
 from .internal.import_hooks import patch as patch_import_hooks
 patch_import_hooks()  # noqa: E402
