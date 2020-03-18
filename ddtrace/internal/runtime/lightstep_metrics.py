@@ -184,8 +184,8 @@ class LightstepMetricsWorker(_worker.PeriodicWorkerThread):
 
     def __init__(self, client, flush_interval=_flush_interval, tracer_tags={}):
         super(LightstepMetricsWorker, self).__init__(interval=flush_interval, name=self.__class__.__name__)
-        self._component_name = tracer_tags.get("lightstep.component_name")
-        self._service_version = tracer_tags.get("service.version")
+        self._component_name = tracer_tags.get(COMPONENT_NAME)
+        self._service_version = tracer_tags.get(SERVICE_VERSION)
 
         self._client = client
         self._runtime_metrics = LightstepRuntimeMetrics()
