@@ -122,7 +122,7 @@ setup_kwargs = dict(
     # funcsigs backport required for vendored debtcollector
     # encoding using msgpack
     install_requires=[
-        "backoff>=1.10.0",
+        "backoff>=1.8.0",
         "enum34; python_version<'3.4'",
         "funcsigs>=1.0.0;python_version=='2.7'",
         "googleapis-common-protos>=1.51.0",
