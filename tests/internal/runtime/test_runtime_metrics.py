@@ -73,9 +73,8 @@ class TestRuntimeMetrics(BaseTestCase):
 
 
 class TestRuntimeWorker(BaseTracerTestCase):
+    @mock.patch.dict("os.environ", {"DD_METRICS_RUNTIME": "RuntimeWorker"})
     def test_tracer_metrics(self):
-        self.previous_runtime = os.getenv("DD_METRICS_RUNTIME")
-        os.environ["DD_METRICS_RUNTIME"] = "RuntimeWorker"
         # Mock socket.socket to hijack the dogstatsd socket
         with mock.patch('socket.socket'):
             # configure tracer for runtime metrics
@@ -120,7 +119,3 @@ class TestRuntimeWorker(BaseTracerTestCase):
             self.assertRegexpMatches(gauge, 'lang_version:')
             self.assertRegexpMatches(gauge, 'lang:')
             self.assertRegexpMatches(gauge, 'tracer_version:')
-        if self.previous_runtime:
-            os.environ["DD_METRICS_RUNTIME"] = self.previous_runtime
-        else:
-            os.unsetenv("DD_METRICS_RUNTIME")
