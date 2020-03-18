@@ -25,21 +25,17 @@ class MetricsReporter:
         secure=DEFAULT_METRICS_SECURE,
         path=DEFAULT_METRICS_PATH,
     ):
-        self._host = host
-        self._port = port
-        self._token = token
-        self._secure = secure
-        self._path = path
+        self._headers = {
+            "Accept": DEFAULT_ACCEPT,
+            "Content-Type": DEFAULT_CONTENT_TYPE,
+            "Lightstep-Access-Token": token,
+        }
+        protocol = "https" if int(secure) else "http"
+        self._url = "{}://{}:{}{}".format(protocol, host, port, path)
 
     @backoff.on_exception(backoff.expo, Exception, max_time=5)
     def send(self, content):
-        headers = {
-            "Accept": DEFAULT_ACCEPT,
-            "Content-Type": DEFAULT_CONTENT_TYPE,
-            "Lightstep-Access-Token": self._token,
-        }
-        protocol = "https" if int(self._secure) else "http"
-        url = "{}://{}:{}{}".format(protocol, self._host, self._port, self._path)
+
         import requests
 
-        return requests.post(url, headers=headers, data=content)
+        return requests.post(self._url, headers=self._headers, data=content)
