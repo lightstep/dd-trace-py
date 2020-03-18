@@ -86,7 +86,8 @@ class LightstepPSUtilRuntimeMetricCollector(RuntimeMetricCollector):
         metrics = [
             "nice",
             "iowait",
-            "irq" "softirq",
+            "irq",
+            "softirq",
             "steal",
         ]
         for m in metrics:
@@ -197,7 +198,7 @@ class LightstepMetricsWorker(_worker.PeriodicWorkerThread):
                 KeyValue(key=_REPORTER_PLATFORM_VERSION_KEY, string_value=platform.python_version()),
             ]
         )
-        self._retries = 1
+        self._intervals = 1
         self._labels = [
             KeyValue(key=COMPONENT_NAME, string_value=self._component_name),
             KeyValue(key=SERVICE_VERSION, string_value=self._service_version),
@@ -212,7 +213,7 @@ class LightstepMetricsWorker(_worker.PeriodicWorkerThread):
         start_time = Timestamp()
         start_time.GetCurrentTime()
         duration = Duration()
-        duration.FromSeconds(self._retries * self._flush_interval)
+        duration.FromSeconds(self._intervals * self._flush_interval)
         for metric in self._runtime_metrics:
             metric_type = MetricKind.GAUGE
             if len(metric) == 3:
@@ -237,11 +238,11 @@ class LightstepMetricsWorker(_worker.PeriodicWorkerThread):
         ingest_request = self._ingest_request()
         try:
             self._client.send(ingest_request.SerializeToString())
-            self._retries = 1
+            self._intervals = 1
         except Exception:
             _log.debug("failed request: %s", ingest_request.idempotency_key)
             self._runtime_metrics.rollback()
-            self._retries += 1
+            self._intervals += 1
 
     run_periodic = flush
     on_shutdown = flush
