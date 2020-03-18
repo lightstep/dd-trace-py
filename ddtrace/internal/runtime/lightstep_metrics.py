@@ -11,9 +11,9 @@ from .metric_collectors import GCRuntimeMetricCollector, RuntimeMetricCollector
 from .runtime_metrics import RuntimeCollectorsIterable
 from google.protobuf.duration_pb2 import Duration
 from google.protobuf.timestamp_pb2 import Timestamp
-from ddtrace.vendor.lightstep.collector_pb2 import KeyValue, Reporter
-from ddtrace.vendor.lightstep.constants import COMPONENT_NAME, SERVICE_VERSION
-from ddtrace.vendor.lightstep.metrics_pb2 import IngestRequest, MetricKind
+from ...vendor.lightstep.collector_pb2 import KeyValue, Reporter
+from ...vendor.lightstep.constants import COMPONENT_NAME, SERVICE_VERSION
+from ...vendor.lightstep.metrics_pb2 import IngestRequest, MetricKind
 
 _log = logging.getLogger(__name__)
 
