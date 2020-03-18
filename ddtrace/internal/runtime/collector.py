@@ -68,11 +68,7 @@ class ValueCollector(object):
 
         # filter values for keys
         if len(keys) > 0 and isinstance(self.value, list):
-            filtered_values = []
-            for v in self.value:
-                if v[0] in keys:
-                    filtered_values.append(v)
-            self.value = filtered_values
+            self.value = [value for value in self.value if value[0] in keys]
 
         self.value_loaded = True
         return self.value
