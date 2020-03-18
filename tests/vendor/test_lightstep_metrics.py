@@ -1,4 +1,5 @@
-from unittest.mock import Mock, patch
+from mock import Mock, patch
+
 from ..base import BaseTestCase
 from ddtrace.internal.runtime.constants import GC_RUNTIME_METRICS
 from ddtrace.internal.runtime.lightstep_metrics import (
