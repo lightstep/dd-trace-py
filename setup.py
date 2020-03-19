@@ -127,8 +127,7 @@ setup_kwargs = dict(
         "funcsigs>=1.0.0;python_version=='2.7'",
         "googleapis-common-protos>=1.51.0",
         "msgpack>=0.5.0",
-        "requests>=2.23.0; python_version!='3.4'",
-        "requests==2.21.0; python_version=='3.4'",
+        "requests",
     ],
     extras_require={
         # users can include opentracing by having:
