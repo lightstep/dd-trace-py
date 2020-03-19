@@ -118,7 +118,7 @@ try:
 
     opts["collect_metrics"] = not asbool(os.environ.get("LIGHTSTEP_METRICS_DISABLE"))
 
-    key_intersection = _LIGHTSTEP_ENV_VARS.keys() & os.environ.keys()
+    key_intersection = set(_LIGHTSTEP_ENV_VARS.keys()) & set(os.environ.keys())
     if key_intersection:
         tracer.set_tags({_LIGHTSTEP_ENV_VARS[key]: os.environ[key] for key in key_intersection})
 
