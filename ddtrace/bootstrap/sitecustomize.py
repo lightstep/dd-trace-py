@@ -79,15 +79,6 @@ _LIGHTSTEP_ENV_VARS = {
 }
 
 
-def add_lightstep_tags(tracer, env):
-    tags = {}
-    for k, var in _LIGHTSTEP_ENV_VARS.items():
-        if k in env:
-            tags[var] = env[k]
-    if len(tags) > 0:
-        tracer.set_tags(tags)
-
-
 def add_global_tags(tracer):
     tags = {}
     for tag in os.environ.get("DD_TRACE_GLOBAL_TAGS", "").split(","):
@@ -127,7 +118,9 @@ try:
 
     opts["collect_metrics"] = not asbool(os.environ.get("LIGHTSTEP_METRICS_DISABLE"))
 
-    add_lightstep_tags(tracer, os.environ)
+    key_intersection = _LIGHTSTEP_ENV_VARS.keys() & os.environ.keys()
+    if key_intersection:
+        tracer.set_tags({_LIGHTSTEP_ENV_VARS[key]: os.environ[key] for key in key_intersection})
 
     if opts:
         tracer.configure(**opts)
