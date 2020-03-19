@@ -88,9 +88,9 @@ def add_lightstep_tags(tracer, env):
         tracer.set_tags(tags)
 
 
-def add_global_tags(tracer, global_tags):
+def add_global_tags(tracer):
     tags = {}
-    for tag in global_tags.split(","):
+    for tag in os.environ.get("DD_TRACE_GLOBAL_TAGS", "").split(","):
         tag_name, _, tag_value = tag.partition(":")
         if not tag_name or not tag_value:
             log.debug("skipping malformed tracer tag")
@@ -142,7 +142,7 @@ try:
         tracer.set_tags({constants.ENV_KEY: os.environ["DATADOG_ENV"]})
 
     if "DD_TRACE_GLOBAL_TAGS" in os.environ:
-        add_global_tags(tracer, os.getenv("DD_TRACE_GLOBAL_TAGS"))
+        add_global_tags(tracer)
 
     # Ensure sitecustomize.py is properly called if available in application directories:
     # * exclude `bootstrap_dir` from the search
