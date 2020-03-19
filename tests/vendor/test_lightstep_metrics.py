@@ -15,7 +15,7 @@ from ddtrace.internal.runtime.lightstep_metrics import (
     LS_SYSTEM_CPU_TIME_TOTAL,
     LS_SYSTEM_CPU_TIME_USAGE,
     LS_SYSTEM_MEM_AVAIL,
-    LS_SYSTEM_MEM_USED,
+    LS_SYSTEM_MEM_TOTAL,
     LS_SYSTEM_NET_RECV,
     LS_SYSTEM_NET_SENT,
 )
@@ -71,7 +71,7 @@ class TestLightstepPSUtilRuntimeMetricCollector(BaseTestCase):
         attrs = {"cpu_times.return_value": mock_cpu_times, "memory_info.return_value": Mock(rss=10000)}
         mock_proc = Mock(**attrs)
 
-        attrs = {"available": 100, "used": 200}
+        attrs = {"available": 100, "total": 200}
         mock_mem = Mock(**attrs)
 
         attrs = {"bytes_recv": 1000, "bytes_sent": 1000}
@@ -86,7 +86,7 @@ class TestLightstepPSUtilRuntimeMetricCollector(BaseTestCase):
             (LS_SYSTEM_CPU_TIME_TOTAL, 108, MetricKind.COUNTER),
             (LS_SYSTEM_CPU_TIME_USAGE, 91, MetricKind.COUNTER),
             (LS_SYSTEM_MEM_AVAIL, mock_mem.available, MetricKind.GAUGE),
-            (LS_SYSTEM_MEM_USED, mock_mem.used, MetricKind.GAUGE),
+            (LS_SYSTEM_MEM_TOTAL, mock_mem.total, MetricKind.GAUGE),
             (LS_SYSTEM_NET_RECV, mock_net.bytes_recv, MetricKind.COUNTER),
             (LS_SYSTEM_NET_SENT, mock_net.bytes_sent, MetricKind.COUNTER),
         ]
