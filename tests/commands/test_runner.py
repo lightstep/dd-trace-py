@@ -1,3 +1,4 @@
+import mock
 import os
 import subprocess
 import sys
@@ -256,6 +257,7 @@ class DdtraceRunTest(BaseTestCase):
         )
         assert out.startswith(b'Test success')
 
+    @mock.patch.dict("os.environ", {"DD_METRICS_RUNTIME": "RuntimeWorker"})
     def test_sitecustomize_run_suppressed(self):
         # ensure `sitecustomize.py` is not loaded if `-S` is used
         env = inject_sitecustomize('tests/commands/bootstrap')
