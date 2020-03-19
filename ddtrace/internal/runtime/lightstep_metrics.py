@@ -26,7 +26,7 @@ LS_SYSTEM_CPU_TIME_USER = "cpu.user"
 LS_SYSTEM_CPU_TIME_TOTAL = "cpu.total"
 LS_SYSTEM_CPU_TIME_USAGE = "cpu.usage"
 LS_SYSTEM_MEM_AVAIL = "mem.available"
-LS_SYSTEM_MEM_USED = "mem.total"
+LS_SYSTEM_MEM_TOTAL = "mem.total"
 LS_SYSTEM_NET_RECV = "net.bytes_recv"
 LS_SYSTEM_NET_SENT = "net.bytes_sent"
 
@@ -40,7 +40,7 @@ LS_RUNTIME_METRICS = set(
         LS_SYSTEM_CPU_TIME_TOTAL,
         LS_SYSTEM_CPU_TIME_USAGE,
         LS_SYSTEM_MEM_AVAIL,
-        LS_SYSTEM_MEM_USED,
+        LS_SYSTEM_MEM_TOTAL,
         LS_SYSTEM_NET_RECV,
         LS_SYSTEM_NET_SENT,
     ]
@@ -144,7 +144,7 @@ class LightstepPSUtilRuntimeMetricCollector(RuntimeMetricCollector):
             (LS_SYSTEM_CPU_TIME_USAGE, system_cpu_usage, MetricKind.COUNTER),
             # system memory metrics
             (LS_SYSTEM_MEM_AVAIL, system_memory.available, MetricKind.GAUGE),
-            (LS_SYSTEM_MEM_USED, system_memory.used, MetricKind.GAUGE),
+            (LS_SYSTEM_MEM_TOTAL, system_memory.total, MetricKind.GAUGE),
             # system network metrics
             (LS_SYSTEM_NET_RECV, net_recv, MetricKind.COUNTER),
             (LS_SYSTEM_NET_SENT, net_sent, MetricKind.COUNTER),
