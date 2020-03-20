@@ -127,6 +127,7 @@ setup_kwargs = dict(
         "funcsigs>=1.0.0;python_version=='2.7'",
         "googleapis-common-protos>=1.51.0",
         "msgpack>=0.5.0",
+        "protobuf>=3.11.3",
         "requests",
     ],
     extras_require={
