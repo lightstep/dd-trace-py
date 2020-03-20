@@ -16,6 +16,7 @@ from ddtrace.vendor.lightstep.constants import (
     ACCESS_TOKEN_ENV_VAR,
     COMPONENT_NAME,
     COMPONENT_NAME_ENV_VAR,
+    METRICS_ENABLED_ENV_VAR,
     SERVICE_VERSION,
     SERVICE_VERSION_ENV_VAR,
 )
@@ -116,7 +117,7 @@ try:
     if priority_sampling:
         opts["priority_sampling"] = asbool(priority_sampling)
 
-    opts["collect_metrics"] = not asbool(os.environ.get("LIGHTSTEP_METRICS_DISABLE"))
+    opts["collect_metrics"] = asbool(os.environ.get(METRICS_ENABLED_ENV_VAR, True))
 
     key_intersection = set(_LIGHTSTEP_ENV_VARS.keys()) & set(os.environ.keys())
     if key_intersection:
