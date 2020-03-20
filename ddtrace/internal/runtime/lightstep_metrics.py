@@ -12,7 +12,7 @@ from .runtime_metrics import RuntimeCollectorsIterable
 from google.protobuf.duration_pb2 import Duration
 from google.protobuf.timestamp_pb2 import Timestamp
 from ...vendor.lightstep.collector_pb2 import KeyValue, Reporter
-from ...vendor.lightstep.constants import COMPONENT_NAME, SERVICE_VERSION
+from ...vendor.lightstep.constants import COMPONENT_NAME, SERVICE_NAME, SERVICE_VERSION
 from ...vendor.lightstep.metrics_pb2 import IngestRequest, MetricKind
 
 _log = logging.getLogger(__name__)
@@ -184,7 +184,7 @@ class LightstepMetricsWorker(_worker.PeriodicWorkerThread):
 
     def __init__(self, client, flush_interval=_flush_interval, tracer_tags={}):
         super(LightstepMetricsWorker, self).__init__(interval=flush_interval, name=self.__class__.__name__)
-        self._component_name = tracer_tags.get(COMPONENT_NAME)
+        self._component_name = tracer_tags.get(SERVICE_NAME)
         self._service_version = tracer_tags.get(SERVICE_VERSION)
 
         self._client = client
