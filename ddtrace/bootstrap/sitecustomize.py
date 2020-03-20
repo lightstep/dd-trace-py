@@ -123,6 +123,9 @@ try:
     if key_intersection:
         tracer.set_tags({_LIGHTSTEP_ENV_VARS[key]: os.environ[key] for key in key_intersection})
 
+    if "DD_TRACE_GLOBAL_TAGS" in os.environ:
+        add_global_tags(tracer)
+
     if opts:
         tracer.configure(**opts)
 
@@ -134,9 +137,6 @@ try:
 
     if "DATADOG_ENV" in os.environ:
         tracer.set_tags({constants.ENV_KEY: os.environ["DATADOG_ENV"]})
-
-    if "DD_TRACE_GLOBAL_TAGS" in os.environ:
-        add_global_tags(tracer)
 
     # Ensure sitecustomize.py is properly called if available in application directories:
     # * exclude `bootstrap_dir` from the search
