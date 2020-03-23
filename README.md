@@ -62,6 +62,7 @@ ls-trace follows its own versioning scheme. The table below shows the correspond
 | ls-trace version | dd-trace-py version |
 |------------------|---------------------|
 | v0.1.0           | v0.31.0             |
+| v0.2.0           | v0.35.0             |
 
 ## Support
 

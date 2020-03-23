@@ -11,7 +11,7 @@ from .tracer import Tracer
 from .settings import config
 
 
-__version__ = '0.1.0'
+__version__ = '0.2.0'
 
 
 # a global tracer instance with integration settings
