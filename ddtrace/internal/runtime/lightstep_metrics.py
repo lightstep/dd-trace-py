@@ -195,32 +195,41 @@ class LightstepMetricsWorker(_worker.PeriodicWorkerThread):
                 KeyValue(key=_HOSTNAME_KEY, string_value=os.uname()[1]),
                 KeyValue(key=_REPORTER_PLATFORM_KEY, string_value="python"),
                 KeyValue(key=_REPORTER_PLATFORM_VERSION_KEY, string_value=platform.python_version()),
+                KeyValue(key=COMPONENT_NAME, string_value=self._component_name),
+                KeyValue(key=SERVICE_VERSION, string_value=self._service_version),
             ]
         )
         self._intervals = 1
         self._labels = [
             KeyValue(key=_HOSTNAME_KEY, string_value=os.uname()[1]),
+            KeyValue(key=COMPONENT_NAME, string_value=self._component_name),
+            KeyValue(key=SERVICE_VERSION, string_value=self._service_version),
         ]
 
     def _update_service_info(self):
         if self._component_name == tracer.tags.get(SERVICE_NAME) and \
-            self._service_version == tracer.tags.get(SERVICE_VERSION):
+           self._service_version == tracer.tags.get(SERVICE_VERSION):
             # nothing's changed, nothing to do
             return
-        
+
         self._component_name = tracer.tags.get(SERVICE_NAME)
         self._service_version = tracer.tags.get(SERVICE_VERSION)
-        tags = [tag for tag in self._reporter.tags if tag.key not in [COMPONENT_NAME, SERVICE_VERSION]]
-        self._labels = [label for label in self._labels if label.key not in [COMPONENT_NAME, SERVICE_VERSION]]
 
-        tags.append(KeyValue(key=COMPONENT_NAME, string_value=self._component_name))
-        tags.append(KeyValue(key=SERVICE_VERSION, string_value=self._service_version))
-        self._reporter = Reporter(tags=tags)
-        self._labels.append(KeyValue(key=COMPONENT_NAME, string_value=self._component_name))
-        self._labels.append(KeyValue(key=SERVICE_VERSION, string_value=self._service_version))
-        
-        
-        
+        self._labels = [
+            KeyValue(key=_HOSTNAME_KEY, string_value=os.uname()[1]),
+            KeyValue(key=COMPONENT_NAME, string_value=self._component_name),
+            KeyValue(key=SERVICE_VERSION, string_value=self._service_version),
+        ]
+
+        self._reporter = Reporter(
+            tags=[
+                KeyValue(key=_HOSTNAME_KEY, string_value=os.uname()[1]),
+                KeyValue(key=_REPORTER_PLATFORM_KEY, string_value="python"),
+                KeyValue(key=_REPORTER_PLATFORM_VERSION_KEY, string_value=platform.python_version()),
+                KeyValue(key=COMPONENT_NAME, string_value=self._component_name),
+                KeyValue(key=SERVICE_VERSION, string_value=self._service_version),
+            ]
+        )
 
     def _ingest_request(self):
         """ Interate through the metrics and create an IngestRequest

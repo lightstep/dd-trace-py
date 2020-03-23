@@ -122,15 +122,15 @@ class TestLightstepMetricsWorker(BaseTestCase):
         # test that ingest request is created successfully
         worker = LightstepMetricsWorker(Mock())
         req = worker._ingest_request()
-        self.assertEqual(len(req.reporter.tags), 3)
-        self.assertEqual(len(worker._labels), 1)
+        self.assertEqual(len(req.reporter.tags), 5)
+        self.assertEqual(len(worker._labels), 3)
 
         # update tags
         tracer.set_tags({
             SERVICE_NAME: "test-component",
             SERVICE_VERSION: "vTest"
         })
-        
+
         req = worker._ingest_request()
         self.assertEqual(len(req.reporter.tags), 5)
         self.assertEqual(len(worker._labels), 3)
