@@ -13,7 +13,7 @@ from .runtime_metrics import RuntimeCollectorsIterable
 from google.protobuf.duration_pb2 import Duration
 from google.protobuf.timestamp_pb2 import Timestamp
 from ...vendor.lightstep.collector_pb2 import KeyValue, Reporter
-from ...vendor.lightstep.constants import COMPONENT_NAME, SERVICE_NAME, SERVICE_VERSION
+from ...vendor.lightstep.constants import ACCESS_TOKEN, COMPONENT_NAME, SERVICE_NAME, SERVICE_VERSION
 from ...vendor.lightstep.metrics_pb2 import IngestRequest, MetricKind
 
 _log = logging.getLogger(__name__)
@@ -264,7 +264,7 @@ class LightstepMetricsWorker(_worker.PeriodicWorkerThread):
     def flush(self):
         ingest_request = self._ingest_request()
         try:
-            self._client.send(ingest_request.SerializeToString())
+            self._client.send(ingest_request.SerializeToString(), token=tracer.tags.get(ACCESS_TOKEN))
             self._intervals = 1
         except Exception:
             _log.debug("failed request: %s", ingest_request.idempotency_key)

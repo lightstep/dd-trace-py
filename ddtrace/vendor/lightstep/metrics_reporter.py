@@ -28,7 +28,10 @@ class MetricsReporter:
         self._url = url
 
     @backoff.on_exception(backoff.expo, Exception, max_time=5)
-    def send(self, content):
+    def send(self, content, token=None):
+
+        if token is not None:
+            self._headers["Lightstep-Access-Token"] = token
 
         import requests
 
