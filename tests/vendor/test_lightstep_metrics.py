@@ -1,6 +1,7 @@
 from mock import Mock, patch
 
 from ..base import BaseTestCase
+from ddtrace import tracer
 from ddtrace.internal.runtime.constants import GC_RUNTIME_METRICS
 from ddtrace.internal.runtime.lightstep_metrics import (
     LightstepMetricsWorker,
@@ -19,6 +20,7 @@ from ddtrace.internal.runtime.lightstep_metrics import (
     LS_SYSTEM_NET_RECV,
     LS_SYSTEM_NET_SENT,
 )
+from ddtrace.vendor.lightstep.constants import COMPONENT_NAME, SERVICE_NAME, SERVICE_VERSION
 from ddtrace.vendor.lightstep.metrics_pb2 import MetricKind
 
 
@@ -115,3 +117,35 @@ class TestLightstepMetricsWorker(BaseTestCase):
         self.assertNotEqual(
             worker._generate_idempotency_key(), worker._generate_idempotency_key(),
         )
+
+    def test_ingest_request(self):
+        # test that ingest request is created successfully
+        worker = LightstepMetricsWorker(Mock())
+        req = worker._ingest_request()
+        self.assertEqual(len(req.reporter.tags), 3)
+        self.assertEqual(len(worker._labels), 1)
+
+        # update tags
+        tracer.set_tags({
+            SERVICE_NAME: "test-component",
+            SERVICE_VERSION: "vTest"
+        })
+        
+        req = worker._ingest_request()
+        self.assertEqual(len(req.reporter.tags), 5)
+        self.assertEqual(len(worker._labels), 3)
+        for tag in req.reporter.tags:
+            if tag.key == COMPONENT_NAME:
+                self.assertEqual(tag.string_value, "test-component")
+            if tag.key == SERVICE_VERSION:
+                self.assertEqual(tag.string_value, "vTest")
+
+        for label in worker._labels:
+            if label.key == COMPONENT_NAME:
+                self.assertEqual(label.string_value, "test-component")
+            if label.key == SERVICE_VERSION:
+                self.assertEqual(label.string_value, "vTest")
+
+        req = worker._ingest_request()
+        self.assertEqual(len(req.reporter.tags), 5)
+        self.assertEqual(len(worker._labels), 3)

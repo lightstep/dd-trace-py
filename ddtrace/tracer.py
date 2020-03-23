@@ -427,7 +427,6 @@ class Tracer(object):
             from .internal.runtime.lightstep_metrics import LightstepMetricsWorker
             self._runtime_worker = LightstepMetricsWorker(
                 MetricsReporter(token=self.tags.get(ACCESS_TOKEN)),
-                tracer_tags=self.tags,
             )
         self._runtime_worker.start()
 

@@ -6,6 +6,7 @@ import string
 
 from ... import _worker
 
+from ddtrace import tracer
 from .constants import GC_RUNTIME_METRICS
 from .metric_collectors import GCRuntimeMetricCollector, RuntimeMetricCollector
 from .runtime_metrics import RuntimeCollectorsIterable
@@ -182,17 +183,15 @@ class LightstepMetricsWorker(_worker.PeriodicWorkerThread):
     _flush_interval = 30
     _key_length = 30
 
-    def __init__(self, client, flush_interval=_flush_interval, tracer_tags={}):
+    def __init__(self, client, flush_interval=_flush_interval):
         super(LightstepMetricsWorker, self).__init__(interval=flush_interval, name=self.__class__.__name__)
-        self._component_name = tracer_tags.get(SERVICE_NAME)
-        self._service_version = tracer_tags.get(SERVICE_VERSION)
+        self._component_name = tracer.tags.get(SERVICE_NAME)
+        self._service_version = tracer.tags.get(SERVICE_VERSION)
 
         self._client = client
         self._runtime_metrics = LightstepRuntimeMetrics()
         self._reporter = Reporter(
             tags=[
-                KeyValue(key=COMPONENT_NAME, string_value=self._component_name),
-                KeyValue(key=SERVICE_VERSION, string_value=self._service_version),
                 KeyValue(key=_HOSTNAME_KEY, string_value=os.uname()[1]),
                 KeyValue(key=_REPORTER_PLATFORM_KEY, string_value="python"),
                 KeyValue(key=_REPORTER_PLATFORM_VERSION_KEY, string_value=platform.python_version()),
@@ -200,14 +199,33 @@ class LightstepMetricsWorker(_worker.PeriodicWorkerThread):
         )
         self._intervals = 1
         self._labels = [
-            KeyValue(key=COMPONENT_NAME, string_value=self._component_name),
-            KeyValue(key=SERVICE_VERSION, string_value=self._service_version),
             KeyValue(key=_HOSTNAME_KEY, string_value=os.uname()[1]),
         ]
+
+    def _update_service_info(self):
+        if self._component_name == tracer.tags.get(SERVICE_NAME) and \
+            self._service_version == tracer.tags.get(SERVICE_VERSION):
+            # nothing's changed, nothing to do
+            return
+        
+        self._component_name = tracer.tags.get(SERVICE_NAME)
+        self._service_version = tracer.tags.get(SERVICE_VERSION)
+        tags = [tag for tag in self._reporter.tags if tag.key not in [COMPONENT_NAME, SERVICE_VERSION]]
+        self._labels = [label for label in self._labels if label.key not in [COMPONENT_NAME, SERVICE_VERSION]]
+
+        tags.append(KeyValue(key=COMPONENT_NAME, string_value=self._component_name))
+        tags.append(KeyValue(key=SERVICE_VERSION, string_value=self._service_version))
+        self._reporter = Reporter(tags=tags)
+        self._labels.append(KeyValue(key=COMPONENT_NAME, string_value=self._component_name))
+        self._labels.append(KeyValue(key=SERVICE_VERSION, string_value=self._service_version))
+        
+        
+        
 
     def _ingest_request(self):
         """ Interate through the metrics and create an IngestRequest
         """
+        self._update_service_info()
         request = IngestRequest(reporter=self._reporter)
         request.idempotency_key = self._generate_idempotency_key()
         start_time = Timestamp()
