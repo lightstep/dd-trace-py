@@ -207,8 +207,9 @@ class LightstepMetricsWorker(_worker.PeriodicWorkerThread):
         ]
 
     def _update_service_info(self):
-        if self._component_name == tracer.tags.get(SERVICE_NAME) and \
-           self._service_version == tracer.tags.get(SERVICE_VERSION):
+        if self._component_name == tracer.tags.get(SERVICE_NAME) and self._service_version == tracer.tags.get(
+            SERVICE_VERSION
+        ):
             # nothing's changed, nothing to do
             return
 
