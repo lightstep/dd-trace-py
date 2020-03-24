@@ -1,3 +1,3 @@
-from .metrics_reporter import MetricsReporter
+from .metrics_reporter import DEFAULT_METRICS_URL, MetricsReporter
 
-__all__ = ["MetricsReporter"]
+__all__ = ["DEFAULT_METRICS_URL", "MetricsReporter"]

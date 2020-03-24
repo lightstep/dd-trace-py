@@ -1,5 +1,6 @@
 import functools
 import logging
+import re
 from os import environ, getpid
 
 from ddtrace.vendor import debtcollector
@@ -7,6 +8,7 @@ from ddtrace.vendor import debtcollector
 from .constants import FILTERS_KEY, SAMPLE_RATE_METRIC_KEY
 from .ext import system
 from .ext.priority import AUTO_REJECT, AUTO_KEEP
+from .filters import FilterRequestsOnUrl
 from .internal.logger import get_logger
 from .internal.runtime import RuntimeTags, RuntimeWorker
 from .internal.writer import AgentWriter
@@ -18,7 +20,7 @@ from .span import Span
 from .utils.formats import get_env
 from .utils.deprecation import deprecated, RemovedInDDTrace10Warning
 from .vendor.dogstatsd import DogStatsd
-from .vendor.lightstep import MetricsReporter
+from .vendor.lightstep import DEFAULT_METRICS_URL, MetricsReporter
 from .vendor.lightstep.constants import ACCESS_TOKEN
 from . import compat
 
@@ -214,6 +216,12 @@ class Tracer(object):
         filters = None
         if settings is not None:
             filters = settings.get(FILTERS_KEY)
+
+        # filter out the metrics URL
+        if collect_metrics:
+            if filters is None:
+                filters = []
+            filters.append(FilterRequestsOnUrl(re.escape(DEFAULT_METRICS_URL)))
 
         # If priority sampling is not set or is True and no priority sampler is set yet
         if priority_sampling in (None, True) and not self.priority_sampler:
