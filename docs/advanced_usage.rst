@@ -72,7 +72,7 @@ on the other side, the metadata is retrieved and the trace can continue.
 To propagate the tracing information, HTTP headers are used to transmit the
 required metadata to piece together the trace.
 
-.. autoclass:: ddtrace.propagation.http.HTTPPropagator
+.. autoclass:: ddtrace.propagation.datadog.DatadogHTTPPropagator
     :members:
 
 Custom
@@ -538,7 +538,7 @@ application.
 .. _ddtracerun:
 
 ``ls-trace-run``
----------------
+----------------
 
 ``ls-trace-run`` will trace :ref:`supported<Supported Libraries>` web frameworks
 and database modules without the need for changing your code::
@@ -600,6 +600,20 @@ $ DATADOG_TRACE_DEBUG=true ls-trace-run ipython
 Because iPython uses SQLite, it will be automatically instrumented and your
 traces should be sent off. If an error occurs, a message will be displayed in
 the console, and changes can be made as needed.
+
+
+uWSGI
+-----
+
+The default configuration of uWSGI applications does not include the
+``--enable-threads`` setting which must be set to ``true`` for the
+tracing library to run.  This is noted in their best practices doc_.
+
+  .. _doc: https://uwsgi-docs.readthedocs.io/en/latest/ThingsToKnow.html
+
+Example run command:
+
+``ddtrace-run uwsgi --http :9090 --wsgi-file your_app.py --enable-threads``
 
 
 API

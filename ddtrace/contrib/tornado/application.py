@@ -1,3 +1,5 @@
+import os
+
 import ddtrace
 
 from tornado import template
@@ -17,7 +19,7 @@ def tracer_config(__init__, app, args, kwargs):
     # default settings
     settings = {
         'tracer': ddtrace.tracer,
-        'default_service': 'tornado-web',
+        'default_service': os.getenv('DATADOG_SERVICE_NAME', 'tornado-web'),
         'distributed_tracing': True,
         'analytics_enabled': None
     }
@@ -53,4 +55,4 @@ def tracer_config(__init__, app, args, kwargs):
         tracer.set_tags(tags)
 
     # configure the PIN object for template rendering
-    ddtrace.Pin(app='tornado', service=service, app_type='web', tracer=tracer).onto(template)
+    ddtrace.Pin(app='tornado', service=service, tracer=tracer).onto(template)

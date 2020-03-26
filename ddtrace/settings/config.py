@@ -30,8 +30,14 @@ class Config(object):
             get_env('trace', 'analytics_enabled', default=legacy_config_value)
         )
 
+        self.logs_injection = asbool(get_env("logs", "injection", default=False))
+
         self.report_hostname = asbool(
             get_env('trace', 'report_hostname', default=False)
+        )
+
+        self.health_metrics_enabled = asbool(
+            get_env('trace', 'health_metrics_enabled', default=False)
         )
 
     def __getattr__(self, name):

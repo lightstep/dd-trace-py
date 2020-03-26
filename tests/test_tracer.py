@@ -99,10 +99,10 @@ class TracerTestCase(BaseTracerTestCase):
                 pass
 
         # Root span should contain the pid of the current process
-        root_span.assert_meta({system.PID: str(getpid())}, exact=False)
+        root_span.assert_metrics({system.PID: getpid()}, exact=False)
 
         # Child span should not contain a pid tag
-        child_span.assert_meta(dict(), exact=True)
+        child_span.assert_metrics(dict(), exact=True)
 
     def test_tracer_wrap_default_name(self):
         @self.tracer.wrap()
@@ -457,7 +457,7 @@ class TracerTestCase(BaseTracerTestCase):
             # verify warnings triggered
             assert len(w) == 1
             assert issubclass(w[-1].category, ddtrace.utils.deprecation.RemovedInDDTrace10Warning)
-            assert 'Use dogstatsd_url' in str(w[-1].message)
+            assert 'Use `dogstatsd_url`' in str(w[-1].message)
 
     def test_configure_dogstatsd_host_port(self):
         with warnings.catch_warnings(record=True) as w:
@@ -466,9 +466,11 @@ class TracerTestCase(BaseTracerTestCase):
             assert self.tracer._dogstatsd_client.host == 'foo'
             assert self.tracer._dogstatsd_client.port == 1234
             # verify warnings triggered
-            assert len(w) == 1
-            assert issubclass(w[-1].category, ddtrace.utils.deprecation.RemovedInDDTrace10Warning)
-            assert 'Use dogstatsd_url' in str(w[-1].message)
+            assert len(w) == 2
+            assert issubclass(w[0].category, ddtrace.utils.deprecation.RemovedInDDTrace10Warning)
+            assert 'Use `dogstatsd_url`' in str(w[0].message)
+            assert issubclass(w[1].category, ddtrace.utils.deprecation.RemovedInDDTrace10Warning)
+            assert 'Use `dogstatsd_url`' in str(w[1].message)
 
     def test_configure_dogstatsd_url_host_port(self):
         self.tracer.configure(dogstatsd_url='foo:1234')
@@ -492,16 +494,30 @@ class TracerTestCase(BaseTracerTestCase):
 
         self.assertIsNone(child.get_tag('language'))
 
-    def test_only_root_span_runtime(self):
+    def test_only_root_span_runtime_internal_span_types(self):
         self.tracer.configure(collect_metrics=True)
 
-        root = self.start_span('root')
-        context = root.context
-        child = self.start_span('child', child_of=context)
+        for span_type in ("custom", "template", "web", "worker"):
+            root = self.start_span('root', span_type=span_type)
+            context = root.context
+            child = self.start_span('child', child_of=context)
 
-        self.assertEqual(root.get_tag('language'), 'python')
+            self.assertEqual(root.get_tag('language'), 'python')
 
-        self.assertIsNone(child.get_tag('language'))
+            self.assertIsNone(child.get_tag('language'))
+
+    def test_only_root_span_runtime_external_span_types(self):
+        self.tracer.configure(collect_metrics=True)
+
+        for span_type in ("algoliasearch.search", "boto", "cache", "cassandra", "elasticsearch",
+                          "grpc", "kombu", "http", "memcached", "redis", "sql", "vertica"):
+            root = self.start_span('root', span_type=span_type)
+            context = root.context
+            child = self.start_span('child', child_of=context)
+
+            self.assertIsNone(root.get_tag('language'))
+
+            self.assertIsNone(child.get_tag('language'))
 
 
 def test_installed_excepthook():
@@ -521,7 +537,7 @@ def test_excepthook():
 
     called = {}
 
-    def original(type, value, traceback):
+    def original(tp, value, traceback):
         called['yes'] = True
 
     sys.excepthook = original
@@ -613,11 +629,6 @@ def test_tracer_fork():
                 assert t.writer != original_writer
                 assert t.writer._trace_queue != original_writer._trace_queue
 
-            # Stop the background worker so we don't accidetnally flush the
-            # queue before we can assert on it
-            t.writer.stop()
-            t.writer.join()
-
         # Assert the trace got written into the correct queue
         assert original_writer._trace_queue.qsize() == 0
         assert t.writer._trace_queue.qsize() == 1
@@ -639,11 +650,6 @@ def test_tracer_fork():
         assert t._pid == original_pid
         assert t.writer == original_writer
         assert t.writer._trace_queue == original_writer._trace_queue
-
-        # Stop the background worker so we don't accidentally flush the
-        # queue before we can assert on it
-        t.writer.stop()
-        t.writer.join()
 
     # Assert the trace got written into the correct queue
     assert original_writer._trace_queue.qsize() == 1

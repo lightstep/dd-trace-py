@@ -7,10 +7,10 @@ log = get_logger(__name__)
 
 # HTTP headers one should set for distributed tracing.
 # These are cross-language (eg: Python, Go and other implementations should honor these)
-HTTP_HEADER_TRACE_ID = 'x-datadog-trace-id'
-HTTP_HEADER_PARENT_ID = 'x-datadog-parent-id'
-HTTP_HEADER_SAMPLING_PRIORITY = 'x-datadog-sampling-priority'
-HTTP_HEADER_ORIGIN = 'x-datadog-origin'
+HTTP_HEADER_TRACE_ID = "x-datadog-trace-id"
+HTTP_HEADER_PARENT_ID = "x-datadog-parent-id"
+HTTP_HEADER_SAMPLING_PRIORITY = "x-datadog-sampling-priority"
+HTTP_HEADER_ORIGIN = "x-datadog-origin"
 
 
 # Note that due to WSGI spec we have to also check for uppercased and prefixed
@@ -69,15 +69,11 @@ class DatadogHTTPPropagator(object):
 
     @staticmethod
     def extract_trace_id(headers):
-        return int(
-            _extract_header_value(POSSIBLE_HTTP_HEADER_TRACE_IDS, headers, default=0)
-        )
+        return int(_extract_header_value(POSSIBLE_HTTP_HEADER_TRACE_IDS, headers, default=0))
 
     @staticmethod
     def extract_parent_span_id(headers):
-        return int(
-            _extract_header_value(POSSIBLE_HTTP_HEADER_PARENT_IDS, headers, default=0)
-        )
+        return int(_extract_header_value(POSSIBLE_HTTP_HEADER_PARENT_IDS, headers, default=0))
 
     @staticmethod
     def extract_sampling_priority(headers):
@@ -124,17 +120,13 @@ class DatadogHTTPPropagator(object):
                 _dd_origin=origin,
             )
         # If headers are invalid and cannot be parsed, return a new context and log the issue.
-        except Exception as error:
-            try:
-                log.debug(
-                    'invalid x-datadog-* headers, trace-id: %s, parent-id: %s, priority: %s, origin: %s, error: %s',
-                    headers.get(HTTP_HEADER_TRACE_ID, 0),
-                    headers.get(HTTP_HEADER_PARENT_ID, 0),
-                    headers.get(HTTP_HEADER_SAMPLING_PRIORITY),
-                    headers.get(HTTP_HEADER_ORIGIN, ''),
-                    error,
-                )
-            # We might fail on string formatting errors ; in that case only format the first error
-            except Exception:
-                log.debug(error)
+        except Exception:
+            log.debug(
+                'invalid x-datadog-* headers, trace-id: %s, parent-id: %s, priority: %s, origin: %s',
+                headers.get(HTTP_HEADER_TRACE_ID, 0),
+                headers.get(HTTP_HEADER_PARENT_ID, 0),
+                headers.get(HTTP_HEADER_SAMPLING_PRIORITY),
+                headers.get(HTTP_HEADER_ORIGIN, ''),
+                exc_info=True,
+            )
             return Context()

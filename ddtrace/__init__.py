@@ -1,5 +1,9 @@
 import sys
 
+# Always import and patch import hooks before loading anything else
+from .internal.import_hooks import patch as patch_import_hooks
+patch_import_hooks()  # noqa: E402
+
 from .monkey import patch, patch_all
 from .pin import Pin
 from .span import Span
@@ -27,10 +31,10 @@ __all__ = [
 _ORIGINAL_EXCEPTHOOK = sys.excepthook
 
 
-def _excepthook(type, value, traceback):
-    tracer.global_excepthook(type, value, traceback)
+def _excepthook(tp, value, traceback):
+    tracer.global_excepthook(tp, value, traceback)
     if _ORIGINAL_EXCEPTHOOK:
-        return _ORIGINAL_EXCEPTHOOK(type, value, traceback)
+        return _ORIGINAL_EXCEPTHOOK(tp, value, traceback)
 
 
 def install_excepthook():
