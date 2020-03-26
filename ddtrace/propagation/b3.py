@@ -87,7 +87,8 @@ class B3HTTPPropagator:
 
 def format_trace_id(trace_id):
     """Format the trace id according to b3 specification."""
-    return format(trace_id, '032x')
+    # hack: trim traceID to LSB
+    return format(trace_id, "016x")[-16:]
 
 
 def format_span_id(span_id):
