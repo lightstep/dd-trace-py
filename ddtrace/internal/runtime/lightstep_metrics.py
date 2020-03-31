@@ -51,6 +51,7 @@ _HOSTNAME_KEY = "lightstep.hostname"
 _REPORTER_PLATFORM_KEY = "lightstep.reporter_platform"
 _REPORTER_PLATFORM_VERSION_KEY = "lightstep.reporter_platform_version"
 _REPORTER_VERSION_KEY = "lightstep.reporter_version"
+_MAX_DURATION = 10 * 60  # 10 minutes
 
 
 class LightstepPSUtilRuntimeMetricCollector(RuntimeMetricCollector):
@@ -180,7 +181,7 @@ class LightstepRuntimeMetrics(RuntimeCollectorsIterable):
 class LightstepMetricsWorker(_worker.PeriodicWorkerThread):
     """ Worker thread to collect and write metrics to a Lightstep endpoint """
 
-    _flush_interval = 30
+    _flush_interval = 30  # in seconds
     _key_length = 30
 
     def __init__(self, client, flush_interval=_flush_interval):
@@ -265,7 +266,9 @@ class LightstepMetricsWorker(_worker.PeriodicWorkerThread):
     def flush(self):
         ingest_request = self._ingest_request()
         try:
-            self._client.send(ingest_request.SerializeToString(), token=tracer.tags.get(ACCESS_TOKEN))
+            # ingest drops metrics with duration greater than _MAX_DURATION
+            if self._intervals * self._flush_interval <= _MAX_DURATION:
+                self._client.send(ingest_request.SerializeToString(), token=tracer.tags.get(ACCESS_TOKEN))
             self._intervals = 1
         except Exception:
             _log.debug("failed request: %s", ingest_request.idempotency_key)
