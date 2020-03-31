@@ -2,6 +2,7 @@ import sys
 
 # Always import and patch import hooks before loading anything else
 from .internal.import_hooks import patch as patch_import_hooks
+
 patch_import_hooks()  # noqa: E402
 
 from .monkey import patch, patch_all
@@ -11,20 +12,20 @@ from .tracer import Tracer
 from .settings import config
 
 
-__version__ = '0.1.1'
+__version__ = "0.2.0"
 
 
 # a global tracer instance with integration settings
 tracer = Tracer()
 
 __all__ = [
-    'patch',
-    'patch_all',
-    'Pin',
-    'Span',
-    'tracer',
-    'Tracer',
-    'config',
+    "patch",
+    "patch_all",
+    "Pin",
+    "Span",
+    "tracer",
+    "Tracer",
+    "config",
 ]
 
 

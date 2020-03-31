@@ -8,9 +8,18 @@ import imp
 import sys
 import logging
 
-from ddtrace.utils.formats import asbool, get_env
+from ddtrace.utils.formats import asbool
 from ddtrace.internal.logger import get_logger
 from ddtrace import config, constants
+from ddtrace.vendor.lightstep.constants import (
+    ACCESS_TOKEN,
+    ACCESS_TOKEN_ENV_VAR,
+    COMPONENT_NAME,
+    COMPONENT_NAME_ENV_VAR,
+    METRICS_ENABLED_ENV_VAR,
+    SERVICE_VERSION,
+    SERVICE_VERSION_ENV_VAR,
+)
 
 DD_LOG_FORMAT = "%(asctime)s %(levelname)s [%(name)s] [%(filename)s:%(lineno)d] {}- %(message)s".format(
     "[dd.trace_id=%(dd.trace_id)s dd.span_id=%(dd.span_id)s] " if config.logs_injection else ""
@@ -64,6 +73,13 @@ def update_patched_modules():
         EXTRA_PATCHED_MODULES.update({module: should_patch.lower() == "true"})
 
 
+_LIGHTSTEP_ENV_VARS = {
+    ACCESS_TOKEN_ENV_VAR: ACCESS_TOKEN,
+    SERVICE_VERSION_ENV_VAR: SERVICE_VERSION,
+    COMPONENT_NAME_ENV_VAR: COMPONENT_NAME,
+}
+
+
 def add_global_tags(tracer):
     tags = {}
     for tag in os.environ.get("DD_TRACE_GLOBAL_TAGS", "").split(","):
@@ -101,7 +117,14 @@ try:
     if priority_sampling:
         opts["priority_sampling"] = asbool(priority_sampling)
 
-    opts["collect_metrics"] = asbool(get_env("runtime_metrics", "enabled"))
+    opts["collect_metrics"] = asbool(os.environ.get(METRICS_ENABLED_ENV_VAR, True))
+
+    key_intersection = set(_LIGHTSTEP_ENV_VARS.keys()) & set(os.environ.keys())
+    if key_intersection:
+        tracer.set_tags({_LIGHTSTEP_ENV_VARS[key]: os.environ[key] for key in key_intersection})
+
+    if "DD_TRACE_GLOBAL_TAGS" in os.environ:
+        add_global_tags(tracer)
 
     if opts:
         tracer.configure(**opts)
@@ -114,9 +137,6 @@ try:
 
     if "DATADOG_ENV" in os.environ:
         tracer.set_tags({constants.ENV_KEY: os.environ["DATADOG_ENV"]})
-
-    if "DD_TRACE_GLOBAL_TAGS" in os.environ:
-        add_global_tags(tracer)
 
     # Ensure sitecustomize.py is properly called if available in application directories:
     # * exclude `bootstrap_dir` from the search

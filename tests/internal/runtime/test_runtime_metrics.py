@@ -72,6 +72,7 @@ class TestRuntimeMetrics(BaseTestCase):
 
 
 class TestRuntimeWorker(BaseTracerTestCase):
+    @mock.patch.dict("os.environ", {"DD_METRICS_RUNTIME": "RuntimeWorker"})
     def test_tracer_metrics(self):
         # Mock socket.socket to hijack the dogstatsd socket
         with mock.patch('socket.socket'):
