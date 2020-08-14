@@ -283,8 +283,12 @@ class Span(object):
         return self.metrics.get(key)
 
     def to_dict(self):
+        trace_id = self.trace_id
+        # ensure 128 bit trace IDs are always trimmed
+        if self.trace_id.bit_length() > 63:
+            trace_id = int(format(self.trace_id, "016x")[-16:], 16)
         d = {
-            'trace_id': self.trace_id,
+            'trace_id': trace_id,
             'parent_id': self.parent_id,
             'span_id': self.span_id,
             'service': self.service,
