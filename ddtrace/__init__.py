@@ -13,7 +13,7 @@ from .settings import config  # noqa: E402
 from .utils.deprecation import deprecated  # noqa: E402
 
 
-__version__ = "0.2.0"
+__version__ = "0.2.1"
 
 
 # a global tracer instance with integration settings
