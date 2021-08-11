@@ -1,11 +1,17 @@
 # ls-trace-py
 
+## ⛔️ Deprecation Warning ⛔️
+Lightstep will be EOLing ls-trace tracers in the near future.
+* All new users are recommended to use [OpenTelemetry](https://github.com/open-telemetry/opentelemetry-python), specifically the OpenTelemetry launcher for python ([Quickstart docs](https://docs.lightstep.com/docs/quick-start-1), [github](https://github.com/lightstep/otel-launcher-python))
+* For those currently using these tracers, we will be reaching out in Q3 2021 to ensure you have a smooth transition to OpenTelemetry. If for any reason you find a gap with OpenTelemetry for your use case, please reach out to your Customer Success representative to discuss and set up time with our Data Onboarding team.
+
+
 [![CircleCI](https://circleci.com/gh/lightstep/ls-trace-py/tree/master.svg?style=svg)](https://circleci.com/gh/lightstep/ls-trace-py/tree/master)
 [![Pyversions](https://img.shields.io/pypi/pyversions/ls-trace.svg?style=flat)](https://pypi.org/project/ls-trace/)
 [![PypiVersions](https://img.shields.io/pypi/v/ls-trace.svg)](https://pypi.org/project/ls-trace/)
 [![OpenTracing Badge](https://img.shields.io/badge/OpenTracing-enabled-blue.svg)](http://pypi.datadoghq.com/trace/docs/installation_quickstart.html#opentracing)
 
-Datadog has generously announced the [donation](https://www.datadoghq.com/blog/opentelemetry-instrumentation/) of their tracer libraries to the [OpenTelemety](https://opentelemetry.io/) project. Auto-instrumentation is a core feature of these libraries, making it possible to create and collect telemetry data without needing to change your code. LightStep wants you to be able to use these libraries now! We've forked the Datadog libraries into the LightStep repo as agents. You can install and use these agents to take advantage of auto-instrumentation without waiting for OpenTelemetry. Each LightStep agent is "pinned" to a Datadog release and is fully supported by LightStep’s Customer Success team.
+Datadog has generously announced the [donation](https://www.datadoghq.com/blog/opentelemetry-instrumentation/) of their tracer libraries to the [OpenTelemetry](https://opentelemetry.io/) project. Auto-instrumentation is a core feature of these libraries, making it possible to create and collect telemetry data without needing to change your code. LightStep wants you to be able to use these libraries now! We've forked the Datadog libraries into the LightStep repo as agents. You can install and use these agents to take advantage of auto-instrumentation without waiting for OpenTelemetry. Each LightStep agent is "pinned" to a Datadog release and is fully supported by LightStep’s Customer Success team.
 
 Simply install the agent, configure it to communicate with LightStep Satellites, run your app, and then any [frameworks](https://docs.lightstep.com/docs/python-auto-instrumentation#section-frameworks), [data stores](https://docs.lightstep.com/docs/python-auto-instrumentation#section-data-stores), and [libraries](https://docs.lightstep.com/docs/python-auto-instrumentation#section-libraries) included in your app will send data to LightStep as distributed traces.
 
